@@ -1,0 +1,61 @@
+name: radio-script
+version: "1"
+description: お題からラジオ台本を生成、多角レビューで A+ まで磨く
+
+inputs:
+  - name: topic
+    type: string
+    required: true
+
+defaults:
+  permission: acceptEdits
+
+stages:
+  - id: plan
+    kind: task
+    facets:
+      persona: radio-planner
+      knowledge: [broadcast-format]
+      instructions: [plan-corners]
+    input: ${workflow.inputs.topic}
+    output_contract: corner-plan
+
+  - id: draft
+    kind: fan_out
+    from: ${plan.output.corners}
+    as: corner
+    facets:
+      persona: radio-writer
+      policies: [tone-casual]
+      instructions: [draft-corner]
+    input: ${corner}
+    output_contract: corner-draft
+
+  - id: assemble
+    kind: fan_in
+    from: ${draft.outputs}
+    facets:
+      persona: editor
+      instructions: [assemble-script]
+    output_contract: full-script
+
+  - id: review
+    kind: task
+    facets:
+      persona: reviewer
+      rubrics: [clarity, humor, pace, accuracy]
+      instructions: [multi-axis-review]
+    input: ${assemble.output}
+    output_contract: review-verdict
+
+  - id: polish
+    kind: task
+    when: ${review.output.grade} < 'A'
+    facets:
+      persona: editor
+      rubrics: [clarity, humor, pace, accuracy]
+      instructions: [apply-suggestions-and-self-assess]
+    input: ${assemble.output}
+    loop_until: ${self.grade} >= 'A'
+    max_iterations: 3
+    output_contract: polished-verdict
