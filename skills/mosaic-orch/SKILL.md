@@ -3,8 +3,8 @@ name: mosaic-orch
 description: >
   Facetベース(persona/policy/knowledge/instruction/rubric)のドメイン非依存オーケストレーター。
   Stage/Fan-out/Fan-in/Loopをサポートする宣言的Workflow YAMLで、複数サブエージェントを合成する。
-  Use when: 多段レビューループ、並列分解タスク、faceted-prompting流の構造化プロンプト実行。
-  Not for: 単発の軽い質問、開発タスク(intendant推奨)、直接コーディング。
+  Use when: 多段レビューループ、並列分解タスク、faceted-prompting流の構造化プロンプト実行、開発タスク(dev-orchestration workflow)。
+  Not for: 単発の軽い質問、直接コーディング。
 user-invocable: true
 ---
 
