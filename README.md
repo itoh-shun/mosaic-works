@@ -36,20 +36,10 @@ Rubric は mosaic-orch 独自の拡張です。Policy (実行中の行動規範)
 ## Install
 
 ```bash
-git clone https://github.com/itoh-shun/mosaic-works.git && \
-ln -sfn "$(pwd)/mosaic-works/skills/mosaic-orch" ~/.claude/skills/mosaic-orch
+curl -fsSL https://raw.githubusercontent.com/itoh-shun/mosaic-works/main/install.sh | bash
 ```
 
-<details>
-<summary>既にclone済みの場合</summary>
-
-```bash
-ln -sfn /path/to/mosaic-works/skills/mosaic-orch ~/.claude/skills/mosaic-orch
-```
-
-</details>
-
-Claude Code を再起動すると `/mosaic-orch` が使えるようになります。
+再実行するとアップデートになります。Claude Code を再起動すると `/mosaic-orch` が使えます。
 
 ## Usage
 
