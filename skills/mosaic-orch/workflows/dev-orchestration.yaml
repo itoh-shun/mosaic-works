@@ -186,9 +186,10 @@ stages:
       Review: ${review.output}
     output_contract: save-result
 
-  # Stage 13: push + PR作成 + 結果報告
+  # Stage 13: push + PR作成 + 結果報告（ユーザー承認必須）
   - id: finalize
     kind: task
+    gate: approval
     facets:
       persona: project-manager
       policies: [git-conventions]

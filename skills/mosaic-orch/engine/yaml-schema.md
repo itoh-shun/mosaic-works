@@ -43,6 +43,7 @@ Orchestrator(L2)が INIT 時に参照し、静的検証に使用する。
 | `permission` | string | | defaults を上書き |
 | `timeout` | number | | defaults を上書き |
 | `skills` | string[] \| string | | Skill tool で起動するスキル名のリスト。stage-runner が自動的にプロンプトに注入する。`${subtask.skills}` のように変数参照で配列を動的に注入可能（Orchestrator RESOLVE_STAGE で展開される） |
+| `gate` | `"approval"` | | ユーザー承認ゲート。`approval` の場合、RUN_STAGE 前に AskUserQuestion でユーザーに確認を求める |
 
 ### FacetSet
 
