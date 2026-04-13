@@ -41,21 +41,10 @@ description: タスク分析、サブタスク分解、persona/instruction選定
 | E2Eテスト | e2e-tester | implement-e2e |
 | コンテンツ制作 | content-creator | implement-general |
 
-### Step 4: スキル選定（superpowers含む）
+### Step 4: スキル選定
 
 Knowledge の skill-catalog を参照し、各サブタスクに必要なスキル名を2〜4個選定する。
-
-各サブタスクに必要なスキルを選定する。skill-catalog に加えて、以下の superpowers スキルを積極的に含めること:
-
-| 場面 | 推奨スキル |
-|---|---|
-| 実装全般 | superpowers:test-driven-development |
-| Kotlin BE | kotlin-specialist |
-| React FE | react-patterns, vercel-react-best-practices |
-| E2E テスト | playwright-skill, playwright-e2e-testing |
-| セキュリティ関連 | owasp-security |
-| DB関連 | postgres, postgresql-database-engineering |
-| アクセシビリティ | accessibility, accessibility-engineer |
+ユーザーの環境にインストール済みのスキルのみ選定すること（skill-catalog に載っているものが対象）。
 
 ### Step 5: Wave振り分け
 

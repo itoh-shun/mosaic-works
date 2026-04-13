@@ -53,10 +53,8 @@ stages:
       policies: [coding-standards, no-push, tdd]
       knowledge: [error-patterns]
       instructions: [${subtask.instruction}]
-    skills: [${subtask.skills}]
     input: |
       Task: ${subtask.description}
-      Skills: ${subtask.skills}
       Branch: ${setup-git.output.branch_name}
     output_contract: implementation-result
 
@@ -81,10 +79,8 @@ stages:
       policies: [coding-standards, no-push, tdd]
       knowledge: [error-patterns]
       instructions: [${subtask.instruction}]
-    skills: [${subtask.skills}]
     input: |
       Task: ${subtask.description}
-      Skills: ${subtask.skills}
       Branch: ${setup-git.output.branch_name}
       Wave1 Result: ${integrate-wave1.output}
     output_contract: implementation-result
@@ -107,7 +103,6 @@ stages:
       persona: qa-engineer
       policies: [tdd]
       instructions: [run-quality-checks]
-    skills: [superpowers:verification-before-completion]
     input: |
       Analysis: ${analyze.output}
       Implementation: ${integrate-wave1.output}
@@ -120,7 +115,6 @@ stages:
       persona: code-reviewer
       rubrics: [performance, naming, testing, security, design]
       instructions: [code-review-5axis]
-    skills: [code-review-and-quality]
     input: |
       Analysis: ${analyze.output}
       Quality Gate: ${quality-gate.output}
@@ -136,7 +130,6 @@ stages:
       policies: [coding-standards, no-push]
       rubrics: [performance, naming, testing, security, design]
       instructions: [apply-fixes-and-self-assess]
-    skills: [superpowers:systematic-debugging]
     input: |
       Review Result: ${review.output}
     loop_until: ${self.grade} >= 'A+'
