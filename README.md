@@ -33,20 +33,42 @@ Rubric は mosaic-orch 独自の拡張です。Policy (実行中の行動規範)
 | `tech-article` | 技術記事の執筆 | research → outline → draft(fan_out) → assemble(fan_in) → review → polish |
 | `dev-orchestration` | 開発オーケストレーション | analyze → setup-git → implement(fan_out) → integrate(fan_in) → quality-gate → review → fix → finalize |
 
-## Quick Start
+## Install
 
 ```bash
-# インストール
-ln -sfn /path/to/mosaic-works/skills/mosaic-orch ~/.claude/skills/mosaic-orch
+git clone https://github.com/itoh-shun/mosaic-works.git && \
+ln -sfn "$(pwd)/mosaic-works/skills/mosaic-orch" ~/.claude/skills/mosaic-orch
+```
 
+<details>
+<summary>既にclone済みの場合</summary>
+
+```bash
+ln -sfn /path/to/mosaic-works/skills/mosaic-orch ~/.claude/skills/mosaic-orch
+```
+
+</details>
+
+Claude Code を再起動すると `/mosaic-orch` が使えるようになります。
+
+## Usage
+
+```bash
 # 技術記事を書く
 /mosaic-orch tech-article Reactの新しいuse()フックの使い方
 
 # 開発タスクを実行
 /mosaic-orch dev-orchestration ソート機能をユーザー一覧に追加
 
-# Dry-run (プロンプト確認のみ、サブエージェント起動なし)
+# 新しいワークフローを作る
+/mosaic-orch --new-workflow
+
+# Dry-run (プロンプト確認のみ)
 /mosaic-orch tech-article --dry-run テスト
+
+# ワークフロー一覧 / Facet逆引き
+/mosaic-orch --list-workflows
+/mosaic-orch --facet-usage
 ```
 
 ## アーキテクチャ
