@@ -16,6 +16,7 @@ $ARGUMENTS を以下のように解析する:
 
 ```
 /mosaic-orch {workflow} [--dry-run] [--permission default|acceptEdits|bypassPermissions] {inputs...}
+/mosaic-orch --resume {runDir}
 /mosaic-orch --new-workflow
 /mosaic-orch --list-workflows
 /mosaic-orch --facet-usage [{facet-kind/facet-name}]
@@ -25,12 +26,14 @@ $ARGUMENTS を以下のように解析する:
 - **第1トークン**: workflow名またはYAMLファイルパス（必須）、またはユーティリティフラグ（下記参照）
 - **`--dry-run`**: プロンプト合成まで実行し、サブエージェントは起動しない
 - **`--permission`**: 権限モード（任意、デフォルト: `default`）
+- **`--resume {runDir}`**: ABORT/中断した run を途中から再開する
 - **残りのトークン**: タスク入力（省略時は AskUserQuestion でユーザーに入力を求める）
 
 例:
 - `/mosaic-orch radio-script 4月のニュース` → radio-script WF, default権限
 - `/mosaic-orch radio-script --dry-run 4月のニュース` → dry-run
 - `/mosaic-orch /path/to/custom.yaml 実装して` → カスタムYAML
+- `/mosaic-orch --resume .mosaic-orch/runs/20260414-153000-dev-orchestration` → 途中再開
 - `/mosaic-orch --list-workflows` → 利用可能なworkflow一覧を表示
 - `/mosaic-orch --facet-usage` → 全facetの使用状況を逆引き表示
 - `/mosaic-orch --facet-usage personas/reviewer` → reviewer persona を使うworkflowを表示
@@ -192,6 +195,7 @@ Sun  ⬜⬜⬜🟦⬜⬜⬜⬜🟢🟢🟡⬜
 ### 手順 0: ユーティリティコマンドの判定
 
 第1トークンを確認する:
+- `--resume` → 第2トークンを `resumeRunDir` として取得。`{resumeRunDir}/workflow.yaml` を Read して workflowPath を復元。手順 2 へ進む（resumeRunDir を Orchestrator に渡す）
 - `--new-workflow` → `engine/wizard.md` を Read し、その手順に従ってワークフロー構築ウィザードを実行して終了
 - `--list-workflows` → ユーティリティコマンド「`--list-workflows`」の手順を実行して終了
 - `--facet-usage` → ユーティリティコマンド「`--facet-usage`」の手順を実行して終了

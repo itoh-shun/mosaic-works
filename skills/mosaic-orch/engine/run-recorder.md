@@ -59,6 +59,30 @@
 
 fan_out の場合: stageId を `{stageId}-{index}` にして各並列要素を記録する。
 
+### writeCheckpoint(runDir, state)
+
+各 stage 完了後に呼ばれる。ABORT/中断からの `--resume` に使う。
+
+1. 以下を `checkpoint.json` として Write（上書き）:
+```json
+{
+  "stageIndex": {state.stageIndex},
+  "stagesRunCount": {state.stagesRunCount},
+  "stageHistory": {state.stageHistory},
+  "context": {state.context}
+}
+```
+
+2. `context` 内の各 stage 出力は、`extracted.json` が存在する stage では extracted フィールドのみ保存する（全文は `stages/*/response.md` に既にある）。extracted がない stage は output 全文を保存する。
+
+### loadCheckpoint(runDir)
+
+`--resume` 時に呼ばれる。
+
+1. `{runDir}/checkpoint.json` を Read してパースする
+2. 存在しない場合: エラー（"checkpoint.json が見つかりません"）
+3. `{ stageIndex, stagesRunCount, stageHistory, context }` を返す
+
 ### recordFinal(runDir, output)
 1. `final.md` に最終 Stage の出力を Write
 
