@@ -148,3 +148,4 @@ Orchestrator INIT 時に全て実行する。1つでも失敗したら SchemaErr
 | V9 | fan_in の from が先行 fan_out の outputs を参照している（推奨） | WARN |
 | V10 | loop_until 使用時に max_iterations が宣言されている | SchemaError |
 | V11 | fan_out に as が宣言されている | SchemaError |
+| V12 | fan_out の from 配列要素数が 6 以上で max_parallel が未設定 | WARN（推奨値: 5） |

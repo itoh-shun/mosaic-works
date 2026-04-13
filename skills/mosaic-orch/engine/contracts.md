@@ -2,6 +2,14 @@
 
 Output Contract の読み込み・抽出・検証を行う。Stage Runner(L3) から呼ばれる。
 
+## Contract 検証フロー全体像
+
+| # | タイミング | 実行層 | 何をするか | 失敗時 |
+|---|---|---|---|---|
+| 1 | INIT | L2 Orchestrator | 全 output_contract の contracts/{name}.md が実在するか | SchemaError → ABORT |
+| 2 | RUN_STAGE 後 | L3 Stage Runner | サブエージェント出力をcontract定義に照らして抽出・検証 | ContractViolation → リトライ(2回) → StageFailure |
+| 3 | CHECK_LOOP | L3 Stage Runner | loop_until 条件内の self.X が extracted から解決できるか | 解決不能 → LoopExhausted |
+
 ## あなたの責務
 
 contract 名とサブエージェント出力を受け取り、
