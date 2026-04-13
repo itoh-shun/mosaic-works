@@ -22,8 +22,47 @@
 /mosaic-orch radio-script --dry-run テスト
 ```
 
-生成されるファイル:
-- `.mosaic-orch/runs/DRYRUN-{timestamp}-radio-script/stages/*/prompt.md`
+dry-run は **プロンプト合成までを実行し、サブエージェントを起動しない** モードです。
+エンジンが正しく動作するか、Facet 解決・変数展開・Contract 定義の整合性を確認するために使います。
+
+### dry-run で検証できること
+
+| 検証項目 | 確認方法 |
+|---|---|
+| Workflow YAML のスキーマ検証（V1〜V11）が通るか | ABORT なく全 Stage が `[DRY-RUN] Would dispatch` を返すこと |
+| 全 Facet ファイルが実在するか | FacetNotFound が出ないこと |
+| 変数参照（${...}）がすべて解決されるか | VariableUnresolved が出ないこと |
+| 合成された system/user プロンプトの内容 | 生成ファイルの `stages/*/prompt.md` を確認 |
+
+### dry-run の出力ファイル
+
+```
+.mosaic-orch/runs/DRYRUN-{YYYYMMDD-HHmmss}-radio-script/
+├── workflow.yaml
+├── inputs.json
+├── trace.ndjson
+└── stages/
+    ├── plan/prompt.md          # 合成済みプロンプト（response.md は生成されない）
+    ├── draft-1/prompt.md
+    ├── draft-2/prompt.md
+    ├── draft-N/prompt.md
+    ├── assemble/prompt.md
+    ├── review/prompt.md
+    └── polish/prompt.md        # when 条件も展開されるが、実行はされない
+```
+
+### 正常な dry-run 出力例
+
+```
+[DRY-RUN] Would dispatch: plan - mosaic-orch
+[DRY-RUN] Would dispatch: draft-1 - mosaic-orch
+[DRY-RUN] Would dispatch: draft-2 - mosaic-orch
+...
+✅ COMPLETE (dry-run)
+Workflow: radio-script
+Stages resolved: plan, draft, assemble, review, polish
+Trace: .mosaic-orch/runs/DRYRUN-20240412-120000-radio-script/
+```
 
 ## 期待される動作
 

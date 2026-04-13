@@ -4,6 +4,7 @@
 
 | エラー名 | 発生層 | 原因 | 対応 |
 |---|---|---|---|
+| ArgumentError | L1 SKILL | workflow名未指定・不正フラグ・不正--permission値 | Orchestrator を呼ばず即終了。使い方メッセージを表示 |
 | SchemaError | L2 INIT | YAML不正、必須フィールド欠落、型不一致 | 即ABORT。YAML修正を案内 |
 | VariableUnresolved | L2 RESOLVE | ${...}参照先不在 | 即ABORT。利用可能な変数キーを報告 |
 | FacetNotFound | L4 Composer | facets/{kind}/{name}.md 不在 | 即ABORT。検索パスを報告 |

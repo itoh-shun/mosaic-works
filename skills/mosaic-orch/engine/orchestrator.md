@@ -119,13 +119,25 @@ loop_until は stage-runner 内部で処理される。Orchestrator はこの状
 2. run-recorder.recordFinal(runDir, finalOutput)
 3. run-recorder.recordEvent(runDir, { event: "complete", final_stage: lastStageId })
 4. ユーザーに報告:
+
+   通常モード:
    ```
    ✅ COMPLETE
    Workflow: {name}
    Stages executed: {実行された stage id のリスト}
    Trace: {runDir}
    ```
-5. final output のサマリーを表示する
+
+   dry-run モード:
+   ```
+   ✅ COMPLETE (dry-run)
+   Workflow: {name}
+   Stages resolved: {解決された stage id のリスト（スキップされたものも含む）}
+   Trace: {runDir}
+   ※ サブエージェントは起動していません。prompt.md でプロンプト内容を確認できます。
+   ```
+
+5. dry-run でない場合のみ final output のサマリーを表示する
 
 ### ABORT
 

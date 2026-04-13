@@ -67,7 +67,7 @@ Orchestrator(L2)が INIT 時に参照し、静的検証に使用する。
 |---|---|---|---|
 | `from` | string | ✅ | 反復対象の変数参照（配列を返す） |
 | `as` | string | ✅ | 各要素の変数名 |
-| `max_parallel` | number | | 並列度の上限。デフォルト: 全部並列 |
+| `max_parallel` | number | | 並列度の上限。デフォルト: 全部並列。要素数 6 以上では `5` 以下を推奨（dispatcher.md 参照） |
 | `on_error` | `"fail"` \| `"continue"` | | デフォルト: `"fail"` |
 
 ## fan_in Stage 固有フィールド
