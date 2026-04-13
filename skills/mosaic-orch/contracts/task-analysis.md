@@ -6,9 +6,10 @@ description: タスク分析の出力契約
 # Output Contract: task-analysis
 
 ## 期待形式
-"## Analysis" 見出しの下にモード情報、"## Wave 1 Subtasks" と "## Wave 2 Subtasks" にサブタスク一覧。
+"## Codebase Context" 見出しの下にプロジェクト診断結果、"## Analysis" 見出しの下にモード情報、"## Wave 1 Subtasks" と "## Wave 2 Subtasks" にサブタスク一覧。
 
 ## パース規則（エンジンが抽出）
+- codebase_context: "## Codebase Context" セクション全体のテキスト（後続 stage への参照用）
 - mode: "## Analysis" セクション内の "- mode:" 直後のテキスト。正規表現 /^(parallel|wave)$/
 - has_wave2: "- has_wave2:" 直後のテキスト。正規表現 /^(true|false)$/
 - has_fe: "- has_fe:" 直後のテキスト。正規表現 /^(true|false)$/
@@ -20,6 +21,7 @@ description: タスク分析の出力契約
 - wave2_subtasks: "## Wave 2 Subtasks" セクション内を同様に解析。セクションがない場合は空配列
 
 ## 検証項目
+- codebase_context が空でないこと（必須）
 - mode が "parallel" または "wave" であること（必須）
 - has_wave2 が "true" または "false" であること（必須）
 - has_fe が "true" または "false" であること（必須）
