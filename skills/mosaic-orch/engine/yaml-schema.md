@@ -131,6 +131,55 @@ aggregate:
 
 非対応: 関数呼び出し、算術、ループカウンタ、文字列結合
 
+## Loop Monitors（トップレベル、任意）
+
+`next` による stage 間ループが収束しない場合に judge を介入させる。
+
+| フィールド | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `loop_monitors` | LoopMonitor[] | | トップレベルに配置する |
+
+### LoopMonitor
+
+| フィールド | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `cycle` | string[] | ✅ | 監視する stage ID のサイクルパターン（例: `[review, fix]`） |
+| `threshold` | number | ✅ | cycle が連続出現する回数の閾値 |
+| `judge` | JudgeDef | ✅ | 閾値到達時に起動する judge |
+
+### JudgeDef
+
+| フィールド | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `persona` | string | ✅ | judge の persona 名（facets/personas/ から解決） |
+| `instruction` | string | ✅ | judge へのインライン指示テンプレート。`{cycle_count}` を実サイクル数に置換 |
+| `decisions` | JudgeDecision[] | ✅ | judge の出力から遷移先を決定するルール |
+
+### JudgeDecision
+
+| フィールド | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `contains` | string | ✅ | judge 出力にこの文字列が含まれていたらマッチ |
+| `goto` | string | ✅ | 遷移先 stage ID、`"COMPLETE"`、または `"ABORT"` |
+
+例:
+```yaml
+loop_monitors:
+  - cycle: [review, fix]
+    threshold: 3
+    judge:
+      persona: architect
+      instruction: |
+        review → fix のサイクルが {cycle_count} 回繰り返されました。
+        現在の差分と直近のレビュー指摘を確認し、このループが生産的かどうか判断してください。
+        「PRODUCTIVE」（継続）または「UNPRODUCTIVE」（中断して次に進む）で回答してください。
+      decisions:
+        - contains: "PRODUCTIVE"
+          goto: review
+        - contains: "UNPRODUCTIVE"
+          goto: save-results
+```
+
 ## 静的検証ルール
 
 Orchestrator INIT 時に全て実行する。1つでも失敗したら SchemaError で ABORT。
@@ -148,3 +197,6 @@ Orchestrator INIT 時に全て実行する。1つでも失敗したら SchemaErr
 | V9 | fan_in の from が先行 fan_out の outputs を参照している（推奨） | WARN |
 | V10 | loop_until 使用時に max_iterations が宣言されている | SchemaError |
 | V11 | fan_out に as が宣言されている | SchemaError |
+| V12 | loop_monitors の cycle 内の全 stage ID が stages に存在する | SchemaError |
+| V13 | loop_monitors の judge.persona が facets/personas/ に存在する | FacetNotFound |
+| V14 | loop_monitors の judge.decisions が 1 件以上ある | SchemaError |

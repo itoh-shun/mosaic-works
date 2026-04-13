@@ -10,6 +10,21 @@ inputs:
 defaults:
   permission: acceptEdits
 
+loop_monitors:
+  - cycle: [review, fix]
+    threshold: 2
+    judge:
+      persona: architect
+      instruction: |
+        review → fix のサイクルが {cycle_count} 回繰り返されました。
+        直近のレビュー指摘と修正内容を確認し、このループが生産的かどうか判断してください。
+        品質が着実に向上しているなら「PRODUCTIVE」、同じ指摘が繰り返されているなら「UNPRODUCTIVE」と回答してください。
+      decisions:
+        - contains: "PRODUCTIVE"
+          goto: review
+        - contains: "UNPRODUCTIVE"
+          goto: save-results
+
 stages:
   # Stage 1: タスク分析 + サブタスク分解 + persona/instruction選定
   - id: analyze
