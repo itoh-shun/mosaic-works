@@ -71,6 +71,7 @@ stages:
     input: |
       Task: ${subtask.description}
       Branch: ${setup-git.output.branch_name}
+      Codebase Context: ${analyze.output.codebase_context}
     output_contract: implementation-result
 
   # Stage 5: Wave1 統合
@@ -98,6 +99,7 @@ stages:
       Task: ${subtask.description}
       Branch: ${setup-git.output.branch_name}
       Wave1 Result: ${integrate-wave1.output}
+      Codebase Context: ${analyze.output.codebase_context}
     output_contract: implementation-result
 
   # Stage 7: Wave2 統合（条件付き）
@@ -124,6 +126,7 @@ stages:
     output_contract: quality-result
 
   # Stage 9: 5軸コードレビュー
+  # A+ → ui-verifyへスキップ、それ以外 → fixへ(stageIndex++)
   - id: review
     kind: task
     facets:
@@ -135,11 +138,14 @@ stages:
       Quality Gate: ${quality-gate.output}
     output_contract: dev-review-verdict
     permission: default
+    next:
+      - when: ${review.output.grade} >= 'A+'
+        goto: ui-verify
 
-  # Stage 10: レビュー修正ループ（A+未満の場合）
+  # Stage 10: レビュー指摘の修正（1ラウンド）→ reviewへ戻る
+  # review→fix のクロスステージループ。loop_monitorが非生産的サイクルを検出する
   - id: fix
     kind: task
-    when: ${review.output.grade} < 'A+'
     facets:
       persona: ${analyze.output.wave1_subtasks[0].persona}
       policies: [coding-standards, no-push]
@@ -147,9 +153,12 @@ stages:
       instructions: [apply-fixes-and-self-assess]
     input: |
       Review Result: ${review.output}
-    loop_until: ${self.grade} >= 'A+'
-    max_iterations: 3
     output_contract: fix-verdict
+    next:
+      - when: ${fix.output.grade} >= 'A+'
+        goto: ui-verify
+      - when: ${fix.output.grade} < 'A+'
+        goto: review
 
   # Stage 11: UI視覚検証（FE変更時のみ）
   - id: ui-verify

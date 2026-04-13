@@ -13,6 +13,7 @@ Orchestrator(L2)が INIT 時に参照し、静的検証に使用する。
 | `inputs` | InputDef[] | | ユーザーパラメータ宣言 |
 | `defaults` | Defaults | | 全Stage共通のデフォルト |
 | `stages` | StageDef[] | ✅ | Stage配列（宣言順が実行順） |
+| `loop_monitors` | LoopMonitor[] | | クロスステージサイクルの監視と judge 介入（詳細は後述） |
 
 ### InputDef
 
@@ -152,7 +153,7 @@ aggregate:
 | フィールド | 型 | 必須 | 説明 |
 |---|---|---|---|
 | `persona` | string | ✅ | judge の persona 名（facets/personas/ から解決） |
-| `instruction` | string | ✅ | judge へのインライン指示テンプレート。`{cycle_count}` を実サイクル数に置換 |
+| `instruction` | string | ✅ | judge へのインライン指示テンプレート。`{cycle_count}` を実サイクル数に置換（注: `${}` ではなく `{}` を使う。variable-resolver の変数参照ではなく、Orchestrator が直接置換するリテラルプレースホルダー） |
 | `decisions` | JudgeDecision[] | ✅ | judge の出力から遷移先を決定するルール |
 
 ### JudgeDecision
@@ -200,3 +201,5 @@ Orchestrator INIT 時に全て実行する。1つでも失敗したら SchemaErr
 | V12 | loop_monitors の cycle 内の全 stage ID が stages に存在する | SchemaError |
 | V13 | loop_monitors の judge.persona が facets/personas/ に存在する | FacetNotFound |
 | V14 | loop_monitors の judge.decisions が 1 件以上ある | SchemaError |
+| V15 | loop_monitors の judge.decisions[].goto が stages の ID、`"COMPLETE"`、または `"ABORT"` のいずれかである | SchemaError |
+| V16 | next[].goto が stages の ID、`"COMPLETE"`、または `"ABORT"` のいずれかである | SchemaError |
