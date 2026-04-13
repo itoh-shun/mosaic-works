@@ -192,7 +192,7 @@ Orchestrator INIT 時に全て実行する。1つでも失敗したら SchemaErr
 | V2 | version が `"1"` である | SchemaError |
 | V3 | 全 stage の id が unique | SchemaError |
 | V4 | 全 stage の kind が `task` / `fan_out` / `fan_in` のいずれか | SchemaError |
-| V5 | 変数参照 `${X.output}` の X が先行 stage の id または `workflow` | SchemaError |
+| V5 | 変数参照 `${X.output}` の X が先行 stage の id または `workflow`。ただし `${self.*}` と fan_out の `as` 変数（例: `${subtask.*}`）は対象外 | SchemaError |
 | V6 | 全 facet 参照先のファイルが実在する | FacetNotFound |
 | V7 | 全 output_contract 参照先の contracts/{name}.md が実在する | SchemaError |
 | V8 | fan_out の from が先行 stage の配列出力を参照している | SchemaError |
@@ -204,3 +204,4 @@ Orchestrator INIT 時に全て実行する。1つでも失敗したら SchemaErr
 | V14 | loop_monitors の judge.decisions が 1 件以上ある | SchemaError |
 | V15 | loop_monitors の judge.decisions[].goto が stages の ID、`"COMPLETE"`、または `"ABORT"` のいずれかである | SchemaError |
 | V16 | next[].goto が stages の ID、`"COMPLETE"`、または `"ABORT"` のいずれかである | SchemaError |
+| V17 | fan_out の `as` 変数名が stage ID、`workflow`、`self` と衝突しない | SchemaError |

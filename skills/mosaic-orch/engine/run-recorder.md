@@ -46,10 +46,13 @@
 {"ts": "...", "event": "dispatch", "stage_id": "plan", "permission": "default"}
 {"ts": "...", "event": "response", "stage_id": "plan", "chars": 2140}
 {"ts": "...", "event": "contract_check", "stage_id": "plan", "result": "ok"}
-{"ts": "...", "event": "stage_complete", "stage_id": "plan", "duration_ms": 4200}
+{"ts": "...", "event": "stage_complete", "stage_id": "plan", "duration_ms": 4200, "prompt_chars": 1834, "response_chars": 2140}
 {"ts": "...", "event": "stage_skip", "stage_id": "polish", "reason": "when=false"}
+{"ts": "...", "event": "gate_approved", "stage_id": "finalize"}
+{"ts": "...", "event": "gate_skipped", "stage_id": "finalize"}
+{"ts": "...", "event": "loop_monitor_triggered", "cycle": ["review", "fix"], "count": 2}
 {"ts": "...", "event": "abort", "stage_id": "draft", "error": "ContractViolation"}
-{"ts": "...", "event": "complete", "final_stage": "assemble"}
+{"ts": "...", "event": "complete", "final_stage": "assemble", "total_prompt_chars": 28400, "total_response_chars": 19200}
 ```
 
 ### recordStage(runDir, stageId, data)
