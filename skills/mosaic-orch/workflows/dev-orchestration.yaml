@@ -20,6 +20,7 @@ stages:
       instructions: [analyze-dev-task]
     input: ${workflow.inputs.task}
     output_contract: task-analysis
+    permission: default  # 読み取り専用 — 分析のみ、ファイル変更不可
 
   # Stage 2: 重複チェック
   - id: check-dup
