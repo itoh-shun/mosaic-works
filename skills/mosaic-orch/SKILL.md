@@ -119,6 +119,8 @@ Mo Tu We Th Fr Sa Su
 
 Runs: 4 | 🟩 2 | 🟢 1 | 🟦 1
 Workflows: dev-orchestration(2), tech-article(1), radio-script(1)
+Projects: todo-api(1), react-dashboard(1), fullstack-app(1), docs(1)
+Avg duration: 4m 32s
 ```
 
 5. 直近30日分を表示する。それ以前は「N older runs」と表示
