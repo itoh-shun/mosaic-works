@@ -19,7 +19,7 @@ Persona、Policy、Knowledge、Instruction、Rubric といった facet の使用
 /mosaic-orch --facet-usage
 ```
 
-全 examples/ 配下の workflow YAML をスキャンし、定義されているすべての facet と、それぞれの利用箇所を一覧表示します。
+全 workflows/ 配下の workflow YAML をスキャンし、定義されているすべての facet と、それぞれの利用箇所を一覧表示します。
 
 ### 特定 facet の使用状況を検索
 

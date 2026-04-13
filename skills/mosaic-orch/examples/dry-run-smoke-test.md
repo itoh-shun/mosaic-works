@@ -31,7 +31,7 @@ stages:
 ```
 
 > **注意**: `from` が参照する配列の要素数は実行時に決まるが、静的検証（INIT）ではエンジンは YAML の宣言内容から潜在的なリスクを警告する。
-> エンジンの実装では `max_parallel` が未設定である fan_out stage が存在する場合に V12 WARN を出力する。
+> V12 ルールの条件は「from 配列要素数が 6 以上かつ `max_parallel` が未設定」だが、要素数が静的に不明な変数参照（`${workflow.inputs.items}` 等）の場合もエンジンは保守的に WARN を出力する。
 
 ### 手順
 
@@ -365,6 +365,6 @@ rm -f workflows/test-when-skip.yaml
 | 1 | V12 ガードルール WARN | ✅ | コンソール出力に `WARN [V12]` が含まれる |
 | 2 | 全 facet 解決 | ✅ | `grep FacetNotFound trace.ndjson` → 0件 |
 | 3 | prompt.md 生成・セクション構造 | ✅ | `ls stages/*/prompt.md` + 中身確認 |
-| 4 | `workflow.inputs.*` 変数展開 | ✅ | `prompt.md` の `## Input` セクション確認 |
-| 4 | `${subtask.*}` 動的 facet 展開 | 本実行のみ | `stages/implement-wave1-*/prompt.md` 確認 |
+| 4a | `workflow.inputs.*` 変数展開 | ✅ | `prompt.md` の `## Input` セクション確認 |
+| 4b | `${subtask.*}` 動的 facet 展開 | 本実行のみ | `stages/implement-wave1-*/prompt.md` 確認 |
 | 5 | `when=false` → stage_skip イベント | ✅（テスト用YAML使用） | `grep stage_skip trace.ndjson` |
