@@ -68,6 +68,7 @@ stages:
       policies: [coding-standards, no-push, tdd]
       knowledge: [error-patterns]
       instructions: [${subtask.instruction}]
+    skills: ${subtask.skills}
     input: |
       Task: ${subtask.description}
       Branch: ${setup-git.output.branch_name}
@@ -95,6 +96,7 @@ stages:
       policies: [coding-standards, no-push, tdd]
       knowledge: [error-patterns]
       instructions: [${subtask.instruction}]
+    skills: ${subtask.skills}
     input: |
       Task: ${subtask.description}
       Branch: ${setup-git.output.branch_name}
