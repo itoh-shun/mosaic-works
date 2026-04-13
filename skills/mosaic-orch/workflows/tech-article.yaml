@@ -1,0 +1,70 @@
+name: tech-article
+version: "1"
+description: 技術記事を調査→構成→並列執筆→統合→レビューで仕上げる
+
+inputs:
+  - name: topic
+    type: string
+    required: true
+
+defaults:
+  permission: acceptEdits
+
+stages:
+  - id: research
+    kind: task
+    facets:
+      persona: researcher
+      instructions: [research-topic]
+    input: ${workflow.inputs.topic}
+    output_contract: research-result
+
+  - id: outline
+    kind: task
+    facets:
+      persona: tech-writer
+      knowledge: [article-format]
+      instructions: [outline-article]
+    input: ${research.output}
+    output_contract: article-outline
+
+  - id: draft
+    kind: fan_out
+    from: ${outline.output.sections}
+    as: section
+    facets:
+      persona: tech-writer
+      knowledge: [article-format]
+      instructions: [draft-section]
+    input: ${section}
+    output_contract: section-draft
+
+  - id: assemble
+    kind: fan_in
+    from: ${draft.outputs}
+    facets:
+      persona: editor
+      knowledge: [article-format]
+      instructions: [assemble-article]
+    output_contract: full-article
+
+  - id: review
+    kind: task
+    facets:
+      persona: reviewer
+      rubrics: [clarity, accuracy, structure, readability]
+      instructions: [multi-axis-review]
+    input: ${assemble.output}
+    output_contract: review-verdict
+
+  - id: polish
+    kind: task
+    when: ${review.output.grade} < 'A'
+    facets:
+      persona: editor
+      rubrics: [clarity, accuracy, structure, readability]
+      instructions: [apply-suggestions-and-self-assess]
+    input: ${assemble.output}
+    loop_until: ${self.grade} >= 'A'
+    max_iterations: 3
+    output_contract: polished-verdict
