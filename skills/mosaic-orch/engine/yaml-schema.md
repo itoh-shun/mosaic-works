@@ -61,6 +61,27 @@ Orchestrator(L2)が INIT 時に参照し、静的検証に使用する。
 |---|---|---|---|
 | `loop_until` | string | | 条件式。true でループ終了 |
 | `max_iterations` | number | loop_until 時必須 | 上限回数 |
+| `next` | NextRule[] | | 条件付き遷移。省略時は次の stage に進む |
+
+### NextRule
+
+| フィールド | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `when` | string | ✅ | 条件式（`${variable} operator 'value'`） |
+| `goto` | string | ✅ | 遷移先の stage ID。`"COMPLETE"` で即完了、`"ABORT"` で即中断 |
+
+next は上から順に評価し、最初にマッチした rule の goto に遷移する。どれにもマッチしなければ通常通り次の stage に進む。
+
+例:
+```yaml
+next:
+  - when: ${self.grade} >= 'A+'
+    goto: save-results
+  - when: ${self.grade} >= 'B'
+    goto: fix
+  - when: ${self.grade} < 'B'
+    goto: redesign
+```
 
 ## fan_out Stage 固有フィールド
 
@@ -70,6 +91,26 @@ Orchestrator(L2)が INIT 時に参照し、静的検証に使用する。
 | `as` | string | ✅ | 各要素の変数名 |
 | `max_parallel` | number | | 並列度の上限。デフォルト: 全部並列。要素数 6 以上では `5` 以下を推奨（dispatcher.md 参照） |
 | `on_error` | `"fail"` \| `"continue"` | | デフォルト: `"fail"` |
+| `aggregate` | AggregateRule{} | | fan_out 結果の条件集約。出力に boolean フラグを追加する |
+
+### AggregateRule
+
+キー名が出力フィールド名、値が条件式。fan_out の全結果に対して評価する。
+
+| プレフィックス | 意味 | 例 |
+|---|---|---|
+| `all:` | 全要素が条件を満たす | `all: ${item.build_status} == 'ok'` |
+| `any:` | いずれかの要素が条件を満たす | `any: ${item.grade} < 'B'` |
+| `none:` | どの要素も条件を満たさない | `none: ${item.has_error} == 'true'` |
+
+例:
+```yaml
+aggregate:
+  all_passed: "all: ${item.build_status} == 'ok'"
+  has_failure: "any: ${item.build_status} == 'fail'"
+```
+
+結果: `${implement-wave1.output.all_passed}` = `"true"` or `"false"`
 
 ## fan_in Stage 固有フィールド
 

@@ -19,6 +19,7 @@ $ARGUMENTS を以下のように解析する:
 /mosaic-orch --new-workflow
 /mosaic-orch --list-workflows
 /mosaic-orch --facet-usage [{facet-kind/facet-name}]
+/mosaic-orch --mosaic
 ```
 
 - **第1トークン**: workflow名またはYAMLファイルパス（必須）、またはユーティリティフラグ（下記参照）
@@ -87,6 +88,43 @@ $ARGUMENTS を以下のように解析する:
 1. 指定した facet に絞って同様の表示を行う
 2. その facet が使われていない場合: `"personas/reviewer は現在どの workflow でも使用されていません"` と表示する
 
+#### `--mosaic`
+
+ワークフロー実行履歴をモザイクタイル(GitHub芝生風)で表示する。
+
+1. `.mosaic-orch/mosaic.json` を Read する（存在しない場合「まだ実行履歴がありません」と表示）
+2. エントリを日付ごとにグループ化する
+3. 以下のカラーマッピングでタイルを表示する:
+
+| Grade | タイル | 意味 |
+|---|---|---|
+| S | 🟪 | 模範的 |
+| A+ | 🟩 | 高品質 |
+| A | 🟢 | 良好 |
+| B | 🟡 | 可 |
+| C | 🔴 | 不可 |
+| N/A | 🟦 | 評価なし(レビューstageがないWF) |
+| abort | ⬛ | 中断 |
+
+4. 以下の形式で表示する:
+
+```
+🧩 Mosaic
+
+2026-04
+Mo Tu We Th Fr Sa Su
+         🟦          ← 4/3
+   🟩                ← 4/8
+   🟢 🟩             ← 4/13, 4/14
+
+Runs: 4 | 🟩 2 | 🟢 1 | 🟦 1
+Workflows: dev-orchestration(2), tech-article(1), radio-script(1)
+```
+
+5. 直近30日分を表示する。それ以前は「N older runs」と表示
+
+Tips: 月が変わったら新しいカレンダーグリッドを開始する
+
 ### バリデーション
 
 第1トークンがユーティリティフラグでも workflow 名/パスでもない場合、引数解析後に以下のチェックを行う。いずれかが失敗した場合は即座にエラーを表示して終了する（Orchestrator を呼ばない）。
@@ -102,7 +140,7 @@ $ARGUMENTS を以下のように解析する:
 手順を開始する前に、以下を **Read tool で読み込む**:
 1. `engine/orchestrator.md` — 状態機械の全手順
 
-ただし `--new-workflow` / `--list-workflows` / `--facet-usage` ユーティリティコマンドの場合は orchestrator.md の読み込みは不要。
+ただし `--new-workflow` / `--list-workflows` / `--facet-usage` / `--mosaic` ユーティリティコマンドの場合は orchestrator.md の読み込みは不要。
 
 ## 手順
 
@@ -112,6 +150,7 @@ $ARGUMENTS を以下のように解析する:
 - `--new-workflow` → `engine/wizard.md` を Read し、その手順に従ってワークフロー構築ウィザードを実行して終了
 - `--list-workflows` → ユーティリティコマンド「`--list-workflows`」の手順を実行して終了
 - `--facet-usage` → ユーティリティコマンド「`--facet-usage`」の手順を実行して終了
+- `--mosaic` → ユーティリティコマンド「`--mosaic`」の手順を実行して終了
 - その他 → 手順 1 へ進む
 
 ### 手順 1: Workflow 解決

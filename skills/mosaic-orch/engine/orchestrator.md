@@ -110,13 +110,23 @@ loop_until は stage-runner 内部で処理される。Orchestrator はこの状
 
 ### ADVANCE
 
-1. stageIndex += 1
-2. → [RESOLVE_STAGE] に戻る
+1. currentStage に `next` フィールドがあるか確認する
+2. `next` がある場合:
+   a. next の rules を上から順に評価する（stage-runner.md の比較演算ルールを使う）
+   b. 最初にマッチした rule の `goto` を取得:
+      - `goto` が `"COMPLETE"` → [COMPLETE] に進む
+      - `goto` が `"ABORT"` → [ABORT] に進む
+      - `goto` が stage ID → その stage の index を stageIndex にセットし、[RESOLVE_STAGE] に戻る
+   c. どの rule にもマッチしなかった場合 → stageIndex += 1
+3. `next` がない場合:
+   stageIndex += 1
+4. → [RESOLVE_STAGE] に戻る
 
 ### COMPLETE
 
 1. 最後に成功した Stage の output を final output とする
 2. run-recorder.recordFinal(runDir, finalOutput)
+2.5. run-recorder.recordMosaic(workflowName, lastReviewGrade or "N/A", "complete")
 3. run-recorder.recordEvent(runDir, { event: "complete", final_stage: lastStageId })
 4. ユーザーに報告:
 
@@ -142,6 +152,7 @@ loop_until は stage-runner 内部で処理される。Orchestrator はこの状
 ### ABORT
 
 1. run-recorder.recordEvent(runDir, { event: "abort", stage_id: currentStage.id, error: errorType })
+1.5. run-recorder.recordMosaic(workflowName, "N/A", "abort")
 2. ユーザーに報告:
    ```
    ❌ ABORT
