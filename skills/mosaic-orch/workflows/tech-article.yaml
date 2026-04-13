@@ -16,6 +16,7 @@ stages:
     facets:
       persona: researcher
       instructions: [research-topic]
+    skills: [technical-writing]
     input: ${workflow.inputs.topic}
     output_contract: research-result
 
@@ -36,6 +37,7 @@ stages:
       persona: tech-writer
       knowledge: [article-format]
       instructions: [draft-section]
+    skills: [technical-writing]
     input: ${section}
     output_contract: section-draft
 
@@ -54,6 +56,7 @@ stages:
       persona: reviewer
       rubrics: [clarity, accuracy, structure, readability]
       instructions: [multi-axis-review]
+    skills: [code-review-and-quality]
     input: ${assemble.output}
     output_contract: review-verdict
 

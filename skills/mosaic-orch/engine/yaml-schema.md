@@ -41,6 +41,7 @@ Orchestrator(L2)が INIT 時に参照し、静的検証に使用する。
 | `when` | string | | 条件式。false なら SKIP |
 | `permission` | string | | defaults を上書き |
 | `timeout` | number | | defaults を上書き |
+| `skills` | string[] | | Skill tool で起動するスキル名のリスト。stage-runner が自動的にプロンプトに注入する |
 
 ### FacetSet
 

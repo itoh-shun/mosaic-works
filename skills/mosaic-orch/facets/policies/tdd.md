@@ -22,3 +22,4 @@ description: テスト先行ポリシー。BE振る舞い変更は必須、FEロ
 ## 実行必須
 - テストを書いただけでは不可。関連テストを実行し、コマンドと出力を報告すること
 - コンパイル通過のみの報告は不合格
+- 実装時は `superpowers:test-driven-development` スキルの red-green-refactor プロトコルに従うこと。Skill tool で起動して手順を取得してください。
