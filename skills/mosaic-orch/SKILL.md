@@ -16,6 +16,7 @@ $ARGUMENTS を以下のように解析する:
 
 ```
 /mosaic-orch {workflow} [--dry-run] [--permission default|acceptEdits|bypassPermissions] {inputs...}
+/mosaic-orch --new-workflow
 /mosaic-orch --list-workflows
 /mosaic-orch --facet-usage [{facet-kind/facet-name}]
 ```
@@ -101,13 +102,14 @@ $ARGUMENTS を以下のように解析する:
 手順を開始する前に、以下を **Read tool で読み込む**:
 1. `engine/orchestrator.md` — 状態機械の全手順
 
-ただし `--list-workflows` / `--facet-usage` ユーティリティコマンドの場合は orchestrator.md の読み込みは不要。
+ただし `--new-workflow` / `--list-workflows` / `--facet-usage` ユーティリティコマンドの場合は orchestrator.md の読み込みは不要。
 
 ## 手順
 
 ### 手順 0: ユーティリティコマンドの判定
 
 第1トークンを確認する:
+- `--new-workflow` → `engine/wizard.md` を Read し、その手順に従ってワークフロー構築ウィザードを実行して終了
 - `--list-workflows` → ユーティリティコマンド「`--list-workflows`」の手順を実行して終了
 - `--facet-usage` → ユーティリティコマンド「`--facet-usage`」の手順を実行して終了
 - その他 → 手順 1 へ進む
