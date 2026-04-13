@@ -48,6 +48,28 @@ git diff --stat {base-branch}...HEAD | tail -1
 
 DBスキーマ変更を含む場合、マイグレーションスクリプトが存在するか確認する。なければFAIL。
 
+## 詳細チェック手順
+
+### PRサイズ判定
+| サイズ | 行数 | 判定 |
+|---|---|---|
+| S | ~100 | ✅ PASS |
+| M | ~200 | ✅ PASS |
+| L | ~400 | ⚠️ PR本文に理由記載で許可 |
+| XL | 400超 | ❌ FAIL → 分割を検討 |
+
+### テスト確認
+1. 振る舞い変更があるか確認: `git diff --name-only` で変更ファイルを列挙
+2. テストファイルが含まれているか確認
+3. テストが実行されたか確認（実装者の報告に「テスト結果」があるか）
+4. テスト失敗がある場合、ベースブランチでも同じテストを実行して切り分け
+
+### ビルド確認
+- BE変更: `./gradlew :server:core:compileKotlin` or 該当モジュール
+- FE変更: `cd ui && npm run build`
+- Lint: `detekt` / `ktlintCheck` / `npm run lint`
+- 上記コマンドの出力を報告に含めること
+
 ## 出力フォーマット
 
 ## Quality Result
