@@ -137,6 +137,16 @@ Tips: 月が変わったら新しいカレンダーグリッドを開始する
 | A2 | `--permission` の次のトークンが `default` / `acceptEdits` / `bypassPermissions` のいずれでもない | `エラー: --permission の値が不正です: "{指定値}"\n有効な値: default, acceptEdits, bypassPermissions` |
 | A3 | 不明なフラグ（`--` で始まるが既知フラグ以外のトークン） | `エラー: 不明なオプション: "{フラグ}"\n使い方: /mosaic-orch {workflow名} [--dry-run] [--permission default|acceptEdits|bypassPermissions] {入力}` |
 
+## ユーザーオーバーライド
+
+`~/.mosaic-orch/overrides.md` を配置すると、全ワークフロー実行時にOrchestrator INIT の最初に読み込まれる。
+ファイル内の指示は workflow YAML の設定よりも優先される。
+
+用途例:
+- デフォルト permission の上書き（例: 常に `acceptEdits`）
+- 全 stage に共通で適用する追加ポリシー
+- 特定の workflow 名に対するカスタム挙動
+
 ## 事前準備
 
 手順を開始する前に、以下を **Read tool で読み込む**:
