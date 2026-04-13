@@ -1,38 +1,52 @@
 # mosaic-works
 
-[mosaic-orch](skills/mosaic-orch/) — faceted-prompting の SoC 原則を拡張したドメイン非依存オーケストレーション Skill for Claude Code.
+[mosaic-orch](skills/mosaic-orch/) — Facet ベースの SoC オーケストレーション Skill for Claude Code.
 
 ## mosaic-orch とは
 
-[faceted-prompting](https://github.com/nrslib/faceted-prompting) の 4 Facet (Persona / Policy / Knowledge / Instruction) に **Rubric (評価基準)** を第 5 Facet として追加し、宣言的 YAML ワークフローでマルチエージェントオーケストレーションを行う Claude Code Skill です。
+プロンプトの関心を 5 つの Facet に分離し、宣言的 YAML ワークフローでマルチエージェントオーケストレーションを行う Claude Code Skill です。
 
-### 3 つのオリジナル拡張
+[faceted-prompting](https://github.com/nrslib/faceted-prompting) の Facet 分類 (Persona / Policy / Knowledge / Instruction) の**考え方を参考**に、独自のエンジンと YAML スキーマを設計しています。faceted-prompting パッケージ自体への依存はありません。
+
+### 5 Facet
+
+| Facet | 役割 | プロンプト配置 |
+|---|---|---|
+| **Persona** | WHO — 実行者の同一性 | system プロンプト |
+| **Policy** | HOW — 実行中の行動規範 | user メッセージ |
+| **Knowledge** | WHAT TO KNOW — 前提知識 | user メッセージ |
+| **Instruction** | WHAT TO DO — やるべきこと | user メッセージ |
+| **Rubric** | HOW TO BE JUDGED — 評価基準 | user メッセージ (末尾) |
+
+Rubric は mosaic-orch 独自の拡張です。Policy (実行中の行動規範) と Rubric (評価時の採点基準) を SoC で分離することで、同じ Rubric をレビュー Stage と修正 Stage で再利用できます。
+
+### 3 つのオーケストレーション機能
 
 1. **Stage + Output Contract** — 工程の関心を分離し、Stage 境界で出力型を強制
-2. **Fan-out / Fan-in** — 1 タスクを関心軸で N 分解 → 並列実行 → 統合
-3. **Rubric Facet** — 評価基準を Policy から分離。レビューと実装で同じ Rubric を再利用可能
+2. **Fan-out / Fan-in** — 1 タスクを N 分解 → 並列実行 → 統合
+3. **Dynamic Facet Reference** — `${...}` で実行時に Facet を動的選択
 
-## Workflow
+## Workflows
 
 | Workflow | 用途 | Stages |
 |---|---|---|
-| `radio-script` | ラジオ台本生成 (サンプル) | plan → draft(fan_out) → assemble(fan_in) → review → polish |
-| `dev-orchestration` | 開発オーケストレーション (intendant移植) | analyze → check-dup → setup-git → implement(fan_out) → integrate(fan_in) → quality-gate → review → fix → ui-verify → save-results → finalize |
+| `tech-article` | 技術記事の執筆 | research → outline → draft(fan_out) → assemble(fan_in) → review → polish |
+| `dev-orchestration` | 開発オーケストレーション | analyze → setup-git → implement(fan_out) → integrate(fan_in) → quality-gate → review → fix → finalize |
 
 ## Quick Start
 
 ```bash
-# インストール (symlink)
+# インストール
 ln -sfn /path/to/mosaic-works/skills/mosaic-orch ~/.claude/skills/mosaic-orch
 
-# ラジオ台本生成
-/mosaic-orch radio-script 4月の桜と花見文化について
+# 技術記事を書く
+/mosaic-orch tech-article Reactの新しいuse()フックの使い方
 
-# 開発オーケストレーション
+# 開発タスクを実行
 /mosaic-orch dev-orchestration ソート機能をユーザー一覧に追加
 
-# Dry-run (サブエージェント起動なし)
-/mosaic-orch radio-script --dry-run テスト
+# Dry-run (プロンプト確認のみ、サブエージェント起動なし)
+/mosaic-orch tech-article --dry-run テスト
 ```
 
 ## アーキテクチャ
@@ -113,11 +127,6 @@ stages:
 | `task` | 1 サブエージェントで 1 タスク実行 |
 | `fan_out` | N 個の並列タスクに展開 |
 | `fan_in` | 並列結果を 1 つに統合 |
-
-## 設計ドキュメント
-
-- [mosaic-orch 設計仕様](docs/superpowers/specs/2026-04-12-mosaic-orch-design.md)
-- [dev-orchestration 設計仕様](docs/superpowers/specs/2026-04-12-dev-orchestration-design.md)
 
 ## License
 
