@@ -35,11 +35,33 @@ description: 汎用実装（言語非依存）の手順指示
 - **型定義とAPI仕様の整合性を確認する**: フィールドが型で必須なら、APIでも必須にする（省略可能にするなら型も`?`にする）
 - **型の重複を避ける**: 同じ型がserver/clientで重複する場合、共有ファイルへの移動を検討する
 
-### Step 4: ビルド・テスト実行（必須）
+### Step 4: ビルド・テスト実行（必須 — スキップ厳禁）
 
-プロジェクトの標準ビルド・テストコマンドを実行し、結果を報告する。使用可能なコマンドはプロジェクトのpackage.json、build.gradle等から判定する。
+以下を**すべて実行**し、出力をそのまま貼り付けること。実行せずに「テストを書いた」「ビルドが通る」と報告してはならない。
+
+1. **ビルドコマンド実行**: `npm run build`, `tsc --noEmit`, `./gradlew compileKotlin` 等
+   - **ビルドが失敗したらコミットしてはならない。** 先にビルドエラーを修正すること
+   - tsconfig.json の設定不備（`allowImportingTsExtensions` 等）もここで検出・修正する
+2. **テスト実行**: `npm test`, `node --test`, `./gradlew test` 等
+   - テストが0件の場合: テストを書いてから再実行する（テスト0件でのコミッ��禁止）
+   - **追加した機能そのもの**のテストが含まれていることを確認する（無関係なテストだけでは不可）
+3. **APIエンドポイントを変更し��場合のHTTP統合テスト**:
+   - サーバーを起動し、実際にHTTPリクエストを送るテストを書く
+   - 最低限: 正常系リクエスト→期待レスポンス、異常系（404, 400）の2パターン
+   - 例:
+     ```typescript
+     // node:test + fetch での統合テスト例
+     test('GET /api/tasks returns tasks', async () => {
+       const res = await fetch('http://localhost:3000/api/tasks');
+       assert.equal(res.status, 200);
+       const body = await res.json();
+       assert(Array.isArray(body));
+     });
+     ```
 
 ### Step 5: ローカルコミット
+
+**ビルドとテストが全て PASS した後にのみ**コミットする:
 
 ```bash
 git add {変更ファイル}
@@ -52,7 +74,9 @@ pushはしない（no-push ポリシー）。
 
 ## Implementation Result
 - files_changed: [{ファイルパス}, ...]
-- test_results: {テスト実行コマンドと出力}
+- test_results: {テスト実行コマンドと出力をそのまま貼り付け}
+- test_count: {passしたテストの件数（数値）}
 - build_status: pass | fail
+- build_command: {実行したビルドコマンド}
 - self_assessment: {実装の所感 — 定量的根拠を含む}
 - concerns: {懸念事項があれば}

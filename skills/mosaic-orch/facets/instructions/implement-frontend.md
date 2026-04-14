@@ -39,9 +39,9 @@ React/TypeScript/MUIでのフロントエンド実装を行ってください。
   - 型安全性（any/unknown の使用禁止、明示的な型注釈）
   - MUIデザインシステムとの一貫性
 
-### Step 4: ビルド・lint・テスト実行（必須）
+### Step 4: ビルド・lint・テスト実行（必須 — スキップ厳禁）
 
-以下のコマンドをすべて実行し、結果を報告する:
+以下のコマンドを**すべて実行**し、出力をそのまま貼り付けること:
 
 ```bash
 npm run build
@@ -49,7 +49,20 @@ npm run lint
 npm run test -- --run {関連テストファイル}
 ```
 
+**禁止事項:**
+- `tsc -b` / `npm run build` が失敗したままコミットすること（vite.config.ts の型エラー含む）
+- テスト0件でコミットすること
+- テスト設定（vitest.config等）を未コミットのまま残すこと
+- **追加した機能のテスト**が含まれていない状態でコミットすること
+- Viteテンプレートの dead code（未使用CSS, 未使用画像）を放置すること
+
+**テスト基準:**
+- ロジック変更がある場合: 追加��た機能のユニットテストを最低1件
+- コンポーネント追加の場合: Testing Library での���ンダリング+操作テストを最低1件
+
 ### Step 5: ローカルコミット
+
+**ビルド・lint・テストが全て PASS した後にのみ**コミットする:
 
 ```bash
 git add {変更ファイル}
@@ -62,8 +75,10 @@ pushはしない（no-push ポリシー）。
 
 ## Implementation Result
 - files_changed: [{ファイルパス}, ...]
-- test_results: {テスト実行コマンドと出力}
+- test_results: {テスト実行コマンドと出力をそのまま貼り付け}
+- test_count: {passしたテストの件数（数値）}
 - build_status: pass | fail
+- build_command: {実行したビルドコマンド}
 - lint_status: pass | fail
 - self_assessment: {実装の所感 — 定量的根拠を含む}
 - concerns: {懸念事項があれば}

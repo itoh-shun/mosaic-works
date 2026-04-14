@@ -34,13 +34,20 @@ git diff --stat {base-branch}...HEAD | tail -1
 
 テスト不足 → FAIL（差し戻し指示を含める）
 
-### Step 3: テスト・ビルド・lint 実行確認
+### Step 3: テスト・ビルド・lint **自分で再実行**（報告の確認だけでは不可）
 
-各実装agentの報告を確認する:
-- テスト実行結果が報告されているか（コンパイル通過のみの報告は不合格）
-- 関連領域のテストが実行されているか
-- ビルドが通過しているか
-- lintが通過しているか
+**実装agentの自己申告を信用してはならない。** 以下を自分で実行する:
+
+1. **ビルドコマンドを自分で実行する**:
+   - Node.js: `npm run build` または `tsc --noEmit`
+   - Kotlin: `./gradlew compileKotlin`
+   - **ビルドが失敗したら build_lint_ok: false** とする
+2. **テストを自分で実行する**:
+   - Node.js: `npm test` または `node --test`
+   - Kotlin: `./gradlew test`
+   - **テストが0件、または追加機能のテストが含まれていなければ test_sufficient: false** とする
+3. **lint を自分で実行する**:
+   - `npm run lint` / `./gradlew detekt` / `./gradlew ktlintCheck`
 
 テスト失敗がある場合、ベースブランチでも同じテストを実行し、既存不具合か変更起因かを切り分ける。
 
