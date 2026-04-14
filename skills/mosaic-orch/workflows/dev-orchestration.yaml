@@ -11,6 +11,32 @@ defaults:
   permission: acceptEdits
 
 loop_monitors:
+  - cycle: [design, design-review]
+    threshold: 2
+    judge:
+      persona: architect
+      instruction: |
+        design → design-review のサイクルが {cycle_count} 回繰り返されました。
+        設計が収束しているか判断してください。
+        品質が着実に向上しているなら「PRODUCTIVE」、同じ指摘が繰り返されているなら「UNPRODUCTIVE」と回答してください。
+      decisions:
+        - contains: "PRODUCTIVE"
+          goto: design
+        - contains: "UNPRODUCTIVE"
+          goto: plan
+  - cycle: [plan, plan-review]
+    threshold: 2
+    judge:
+      persona: architect
+      instruction: |
+        plan → plan-review のサイクルが {cycle_count} 回繰り返されました。
+        計画が収束しているか判断してください。
+        品質が着実に向上しているなら「PRODUCTIVE」、同じ指摘が繰り返されているなら「UNPRODUCTIVE」と回答してください。
+      decisions:
+        - contains: "PRODUCTIVE"
+          goto: plan
+        - contains: "UNPRODUCTIVE"
+          goto: check-dup
   - cycle: [review, fix]
     threshold: 2
     judge:
@@ -26,7 +52,7 @@ loop_monitors:
           goto: save-results
 
 stages:
-  # Stage 1: 設計仕様 — コードベース診断 + 要件分析 + アーキテクチャ設計
+  # Stage 1: 設計仕様 — コードベース診断 + ファイルレベル設計 + スコープ規律 + 受入基準
   - id: design
     kind: task
     gate: approval
@@ -36,9 +62,26 @@ stages:
       instructions: [design-spec]
     input: ${workflow.inputs.task}
     output_contract: design-result
-    permission: default  # 読み取り専用 — 分析のみ、ファイル変更不可
+    permission: default
 
-  # Stage 2: タスク計画 — サブタスク分解 + persona/instruction/skill選定 + Wave振り分け
+  # Stage 2: AI設計レビュー — 5軸検証（完全性/ファイル設計/スコープ/実現可能性/依存整合性）
+  - id: design-review
+    kind: task
+    facets:
+      persona: architect
+      instructions: [review-design]
+    input: |
+      Task: ${workflow.inputs.task}
+      Design: ${design.output}
+    output_contract: design-review-result
+    permission: default
+    next:
+      - when: ${design-review.output.verdict} == 'APPROVE'
+        goto: plan
+      - when: ${design-review.output.verdict} == 'NEEDS_REVISION'
+        goto: design
+
+  # Stage 3: タスク計画 — サブタスク分解 + ファイル割り当て + テスト戦略 + 受入基準分配
   - id: plan
     kind: task
     gate: approval
@@ -50,9 +93,27 @@ stages:
       Task: ${workflow.inputs.task}
       Design: ${design.output}
     output_contract: plan-result
-    permission: default  # 読み取り専用 — 計画のみ、ファイル変更不可
+    permission: default
 
-  # Stage 3: 重複チェック
+  # Stage 4: 計画検証 — 要件カバレッジ + ファイル衝突 + スコープクリープ + Wave依存整合
+  - id: plan-review
+    kind: task
+    facets:
+      persona: project-manager
+      instructions: [review-plan]
+    input: |
+      Task: ${workflow.inputs.task}
+      Design: ${design.output}
+      Plan: ${plan.output}
+    output_contract: plan-review-result
+    permission: default
+    next:
+      - when: ${plan-review.output.verdict} == 'APPROVE'
+        goto: check-dup
+      - when: ${plan-review.output.verdict} == 'NEEDS_REVISION'
+        goto: plan
+
+  # Stage 5: 重複チェック
   - id: check-dup
     kind: task
     facets:
@@ -61,7 +122,7 @@ stages:
     input: ${workflow.inputs.task}
     output_contract: duplicate-check
 
-  # Stage 4: Issue + ブランチ作成
+  # Stage 6: Issue + ブランチ作成
   - id: setup-git
     kind: task
     facets:
@@ -73,7 +134,7 @@ stages:
       Design: ${design.output}
     output_contract: git-setup
 
-  # Stage 5: Worktree 作成 — 実装用の隔離環境を準備
+  # Stage 7: Worktree 作成 — 実装用の隔離環境を準備
   - id: setup-worktree
     kind: task
     facets:
@@ -84,7 +145,7 @@ stages:
       Design: ${design.output}
     output_contract: worktree-setup
 
-  # Stage 6: Wave1 並列実装
+  # Stage 8: Wave1 並列実装
   - id: implement-wave1
     kind: fan_out
     from: ${plan.output.wave1_subtasks}
@@ -101,9 +162,14 @@ stages:
       Branch: ${setup-git.output.branch_name}
       Worktree: ${setup-worktree.output.worktree_path}
       Codebase Context: ${design.output.codebase_context}
+      Files to Create: ${subtask.files_create}
+      Files to Modify: ${subtask.files_modify}
+      Testing Strategy: ${subtask.testing_strategy}
+      Acceptance Criteria: ${subtask.acceptance_criteria}
+      Implementation Guidelines: ${design.output.implementation_guidelines}
     output_contract: implementation-result
 
-  # Stage 7: Wave1 統合
+  # Stage 9: Wave1 統合
   - id: integrate-wave1
     kind: fan_in
     from: ${implement-wave1.outputs}
@@ -113,7 +179,7 @@ stages:
       instructions: [merge-implementations]
     output_contract: integration-result
 
-  # Stage 8: Wave2 並列実装（条件付き）
+  # Stage 10: Wave2 並列実装（条件付き）
   - id: implement-wave2
     kind: fan_out
     when: ${plan.output.has_wave2} == 'true'
@@ -132,9 +198,14 @@ stages:
       Worktree: ${setup-worktree.output.worktree_path}
       Wave1 Result: ${integrate-wave1.output}
       Codebase Context: ${design.output.codebase_context}
+      Files to Create: ${subtask.files_create}
+      Files to Modify: ${subtask.files_modify}
+      Testing Strategy: ${subtask.testing_strategy}
+      Acceptance Criteria: ${subtask.acceptance_criteria}
+      Implementation Guidelines: ${design.output.implementation_guidelines}
     output_contract: implementation-result
 
-  # Stage 9: Wave2 統合（条件付き）
+  # Stage 11: Wave2 統合（条件付き）
   - id: integrate-wave2
     kind: fan_in
     when: ${plan.output.has_wave2} == 'true'
@@ -145,7 +216,7 @@ stages:
       instructions: [merge-implementations]
     output_contract: integration-result
 
-  # Stage 10: 品質ゲート
+  # Stage 12: 品質ゲート
   - id: quality-gate
     kind: task
     facets:
@@ -158,8 +229,7 @@ stages:
       Implementation: ${integrate-wave1.output}
     output_contract: quality-result
 
-  # Stage 11: 5軸コードレビュー
-  # A+ → ui-verifyへスキップ、それ以外 → fixへ(stageIndex++)
+  # Stage 13: 5軸コードレビュー
   - id: review
     kind: task
     facets:
@@ -176,7 +246,7 @@ stages:
       - when: ${review.output.grade} >= 'A+'
         goto: ui-verify
 
-  # Stage 12: レビュー指摘の修正（1ラウンド）→ reviewへ戻る
+  # Stage 14: レビュー指摘の修正
   - id: fix
     kind: task
     facets:
@@ -193,7 +263,7 @@ stages:
       - when: ${fix.output.grade} < 'A+'
         goto: review
 
-  # Stage 13: UI視覚検証（FE変更時のみ — ダークモード/モバイル必須）
+  # Stage 15: UI視覚検証（FE変更時のみ）
   - id: ui-verify
     kind: task
     when: ${plan.output.has_fe} == 'true'
@@ -206,7 +276,7 @@ stages:
       検証対象: デスクトップ(light/dark) + モバイル(light/dark) の4パターン
     output_contract: ui-verification
 
-  # Stage 14: レビュー結果保存 + ログ
+  # Stage 16: レビュー結果保存 + ログ
   - id: save-results
     kind: task
     facets:
@@ -220,7 +290,7 @@ stages:
       Review: ${review.output}
     output_contract: save-result
 
-  # Stage 15: push + PR作成 + 結果報告（ユーザー承認必須）
+  # Stage 17: push + PR作成 + 結果報告（ユーザー承認必須）
   - id: finalize
     kind: task
     gate: approval
