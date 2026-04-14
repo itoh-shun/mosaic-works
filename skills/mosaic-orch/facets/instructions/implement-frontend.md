@@ -29,15 +29,48 @@ React/TypeScript/MUIでのフロントエンド実装を行ってください。
 - FEロジック変更の場合はテストを書く（推奨）
 - FE UIのみ変更の場合はテスト不要（UI視覚検証で代替）
 
+### Step 2.5: スタイル基盤の確認（新規プロジェクトの場合）
+
+プロジェクトに CSS変数（デザイントークン）が未定義の場合、実装前に以下を定義すること:
+
+```css
+:root {
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f8f9fa;
+  --color-text: #1a1a2e;
+  --color-text-secondary: #6b7280;
+  --color-border: #e5e7eb;
+  --color-primary: #3b82f6;
+  --color-danger: #ef4444;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --sidebar-width: 220px;
+  --header-height: 56px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1a1a2e;
+    --color-bg-secondary: #16213e;
+    --color-text: #e5e7eb;
+    --color-text-secondary: #9ca3af;
+    --color-border: #374151;
+  }
+}
+```
+
+**全コンポーネントは直接の色指定ではなく CSS変数を使うこと。** `color: #333` ではなく `color: var(--color-text)` と書く。
+
 ### Step 3: 実装
 
 - 既存パターンに従ってコンポーネントを書く
-- 以下を意識する:
-  - コンポーネントの再利用性（Props設計の妥当性）
-  - レスポンシブ対応（mobile-first）
-  - アクセシビリティ（セマンティックHTML、ARIA、キーボード操作）
-  - 型安全性（any/unknown の使用禁止、明示的な型注釈）
-  - MUIデザインシステムとの一貫性
+- 以下は**必須要件**（推奨ではなく義務）:
+  - **ダークモード対応**: `prefers-color-scheme: dark` で自動切替。全ページで背景・テキスト・ボーダーが適切に変わること。CSS変数を使い、直接の色コードを書かない
+  - **レスポンシブ対応（mobile-first）**: 375px幅でレイアウト崩れなし。サイドバーはモバイルで非表示またはハンバーガーメニュー。テーブルはモバイルでカード表示またはスクロール可能
+  - **アクセシビリティ**: セマンティックHTML、ARIA、キーボード操作
+  - **コンポーネントの再利用性**: Props設計の妥当性
+  - **型安全性**: any/unknown の使用禁止
+  - **デザイン一貫性**: ページ間でフォント・余白・ボタンスタイルが統一されていること。ヘッダーの重複表示がないこと
 
 ### Step 4: ビルド・lint・テスト実行（必須 — スキップ厳禁）
 
