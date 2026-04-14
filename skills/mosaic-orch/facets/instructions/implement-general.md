@@ -78,5 +78,6 @@ pushはしない（no-push ポリシー）。
 - test_count: {passしたテストの件数（数値）}
 - build_status: pass | fail
 - build_command: {実行したビルドコマンド}
+- skills_used: [{実際にSkill toolで起動したスキル名}]
 - self_assessment: {実装の所感 — 定量的根拠を含む}
 - concerns: {懸念事項があれば}

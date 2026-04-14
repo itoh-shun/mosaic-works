@@ -80,5 +80,6 @@ pushはしない（no-push ポリシー）。
 - build_status: pass | fail
 - build_command: {実行したビルドコマンド}
 - lint_status: pass | fail
+- skills_used: [{実際にSkill toolで起動したスキル名}]
 - self_assessment: {実装の所感 — 定量的根拠を含む}
 - concerns: {懸念事項があれば}
