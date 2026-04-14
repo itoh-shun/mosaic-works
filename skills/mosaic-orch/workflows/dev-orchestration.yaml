@@ -31,7 +31,7 @@ stages:
     kind: task
     facets:
       persona: architect
-      knowledge: [team-roster, skill-catalog]
+      knowledge: [team-roster, skill-catalog, mcp-catalog]
       instructions: [analyze-dev-task]
     input: ${workflow.inputs.task}
     output_contract: task-analysis
@@ -69,6 +69,7 @@ stages:
       knowledge: [error-patterns]
       instructions: [${subtask.instruction}]
     skills: ${subtask.skills}
+    mcps: ${subtask.mcps}
     input: |
       Task: ${subtask.description}
       Branch: ${setup-git.output.branch_name}
@@ -97,6 +98,7 @@ stages:
       knowledge: [error-patterns]
       instructions: [${subtask.instruction}]
     skills: ${subtask.skills}
+    mcps: ${subtask.mcps}
     input: |
       Task: ${subtask.description}
       Branch: ${setup-git.output.branch_name}
