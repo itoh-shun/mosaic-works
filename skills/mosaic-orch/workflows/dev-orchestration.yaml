@@ -37,6 +37,19 @@ loop_monitors:
           goto: plan
         - contains: "UNPRODUCTIVE"
           goto: check-dup
+  - cycle: [ai-review, ai-fix]
+    threshold: 3
+    judge:
+      persona: architect
+      instruction: |
+        ai-review → ai-fix のサイクルが {cycle_count} 回繰り返されました。
+        各サイクルのレポートを確認し、このループが健全（進捗あり）か非生産的（同じ問題を繰り返している）かを判断してください。
+        品質が着実に向上しているなら「PRODUCTIVE」、同じ指摘が繰り返されているなら「UNPRODUCTIVE」と回答してください。
+      decisions:
+        - contains: "PRODUCTIVE"
+          goto: ai-review
+        - contains: "UNPRODUCTIVE"
+          goto: quality-gate
   - cycle: [review, fix]
     threshold: 2
     judge:
@@ -216,7 +229,62 @@ stages:
       instructions: [merge-implementations]
     output_contract: integration-result
 
-  # Stage 12: 品質ゲート
+  # Stage 12: AIアンチパターンレビュー — 実装済みコードのAI特有問題検出
+  - id: ai-review
+    kind: task
+    facets:
+      persona: ai-antipattern-reviewer
+      policies: [ai-antipattern]
+      instructions: [ai-review]
+    input: |
+      Design: ${design.output}
+      Plan: ${plan.output}
+      Implementation: ${integrate-wave1.output}
+    output_contract: ai-review-result
+    permission: default
+    next:
+      - when: ${ai-review.output.verdict} == 'APPROVE'
+        goto: quality-gate
+      - when: ${ai-review.output.verdict} == 'REJECT'
+        goto: ai-fix
+
+  # Stage 13: AIアンチパターン修正 — 指摘に対する修正 or 修正不要判断
+  - id: ai-fix
+    kind: task
+    facets:
+      persona: ${plan.output.wave1_subtasks[0].persona}
+      policies: [coding-standards, no-push]
+      instructions: [ai-fix]
+    input: |
+      AI Review Result: ${ai-review.output}
+      Design: ${design.output}
+    output_contract: ai-fix-result
+    next:
+      - when: ${ai-fix.output.action} == 'no_fix_needed'
+        goto: arbitrate
+      - when: ${ai-fix.output.action} == 'fixed'
+        goto: ai-review
+      - when: ${ai-fix.output.action} == 'partial'
+        goto: ai-review
+
+  # Stage 14: 仲裁 — ai-review と ai-fix の意見対立を独立検証で裁定
+  - id: arbitrate
+    kind: task
+    facets:
+      persona: architect
+      instructions: [arbitrate]
+    input: |
+      AI Review: ${ai-review.output}
+      AI Fix: ${ai-fix.output}
+    output_contract: arbitrate-result
+    permission: default
+    next:
+      - when: ${arbitrate.output.verdict} == 'APPROVE_FIXER'
+        goto: quality-gate
+      - when: ${arbitrate.output.verdict} == 'ESCALATE_TO_FIX'
+        goto: ai-fix
+
+  # Stage 15: 品質ゲート
   - id: quality-gate
     kind: task
     facets:
@@ -229,7 +297,7 @@ stages:
       Implementation: ${integrate-wave1.output}
     output_contract: quality-result
 
-  # Stage 13: 5軸コードレビュー
+  # Stage 16: 5軸コードレビュー
   - id: review
     kind: task
     facets:
@@ -246,7 +314,7 @@ stages:
       - when: ${review.output.grade} >= 'A+'
         goto: ui-verify
 
-  # Stage 14: レビュー指摘の修正
+  # Stage 17: レビュー指摘の修正
   - id: fix
     kind: task
     facets:
@@ -263,7 +331,7 @@ stages:
       - when: ${fix.output.grade} < 'A+'
         goto: review
 
-  # Stage 15: UI視覚検証（FE変更時のみ）
+  # Stage 18: UI視覚検証（FE変更時のみ）
   - id: ui-verify
     kind: task
     when: ${plan.output.has_fe} == 'true'
@@ -276,7 +344,7 @@ stages:
       検証対象: デスクトップ(light/dark) + モバイル(light/dark) の4パターン
     output_contract: ui-verification
 
-  # Stage 16: レビュー結果保存 + ログ
+  # Stage 19: レビュー結果保存 + ログ
   - id: save-results
     kind: task
     facets:
@@ -290,7 +358,7 @@ stages:
       Review: ${review.output}
     output_contract: save-result
 
-  # Stage 17: push + PR作成 + 結果報告（ユーザー承認必須）
+  # Stage 20: push + PR作成 + 結果報告（ユーザー承認必須）
   - id: finalize
     kind: task
     gate: approval
