@@ -162,15 +162,17 @@ stages:
       - when: ${fix.output.grade} < 'A+'
         goto: review
 
-  # Stage 11: UI視覚検証（FE変更時のみ）
+  # Stage 11: UI視覚検証（FE変更時のみ — ダークモード/モバイル必須）
   - id: ui-verify
     kind: task
     when: ${analyze.output.has_fe} == 'true'
     facets:
       persona: qa-engineer
       instructions: [verify-ui-visual]
+    skills: [usability-psychologist, web-design-guidelines, accessibility]
     input: |
       Analysis: ${analyze.output}
+      検証対象: デスクトップ(light/dark) + モバイル(light/dark) の4パターン
     output_contract: ui-verification
 
   # Stage 12: レビュー結果保存 + ログ
