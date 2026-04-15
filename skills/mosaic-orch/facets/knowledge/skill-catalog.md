@@ -25,6 +25,7 @@ description: 利用可能なSkill一覧とトリガー条件
 | Props設計、合成パターン | `vercel-composition-patterns` |
 | UI実装、デザイン→コード変換 | `frontend-implementation` |
 | アクセシビリティ | `accessibility`, `accessibility-engineer` |
+| ブランド一貫UI、`Stripe風` / `Linear風` など特定ブランドスタイル | `awesome-design-md` |
 
 ### テスト・品質
 | トリガー | スキル例 |
