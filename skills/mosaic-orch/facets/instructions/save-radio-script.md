@@ -34,6 +34,22 @@ generator: mosaic-orch radio-writer workflow
 - Write tool で保存
 - 既存ファイルがある場合は上書きせず `-2`, `-3` のサフィックスを付ける
 
+### Step 4: トピックストックの更新（ラジってえーじぇんと！本流番組の場合）
+
+`~/.claude/skills/mosaic-orch/facets/knowledge/rajitte-topic-stock.md` を Read し、今回採用した各ニュース・トピックを「使用済みトピック」セクションに追記する:
+
+```
+#### #N (YYYY-MM-DD) — タイトル
+- slug: kebab-case-slug
+- 主要キーワード: kw1, kw2, kw3
+- 扱った角度: {1〜2行で説明}
+- 続報可: {続報として何が扱えるか}
+```
+
+候補ストックから採用した場合: 「候補ストック」セクションから該当エントリを削除する。
+
+Edit tool で追記する（既存内容を破壊せず、領域別カテゴリの末尾に追加）。
+
 ## 出力フォーマット（厳守）
 
 ## Save Result

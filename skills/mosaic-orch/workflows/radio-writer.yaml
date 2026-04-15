@@ -31,7 +31,7 @@ stages:
     kind: task
     facets:
       persona: radio-planner
-      knowledge: [broadcast-format]
+      knowledge: [broadcast-format, rajitte-topic-stock]
       instructions: [collect-news]
     input: ${workflow.inputs.topic}
     output_contract: research-result
@@ -162,6 +162,7 @@ stages:
     kind: task
     facets:
       persona: editor
+      knowledge: [rajitte-topic-stock]
       instructions: [save-radio-script]
     input: |
       Topic: ${workflow.inputs.topic}
@@ -177,6 +178,7 @@ stages:
     kind: task
     facets:
       persona: editor
+      knowledge: [rajitte-topic-stock]
       instructions: [save-radio-script]
     input: |
       Topic: ${workflow.inputs.topic}

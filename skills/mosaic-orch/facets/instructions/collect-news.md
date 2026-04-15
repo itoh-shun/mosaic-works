@@ -25,31 +25,43 @@ description: ラジオ台本素材としてニュース・トレンドをWebSear
   - ラジオでの料理ポイント（笑いに繋がる角度／驚き／共感／対立）
   - URL（出典）
 
-### Step 4: 過去ネタとの重複チェック（ベストエフォート）
-- もし `~/.mosaic-orch/runs/*-radio-writer/` の過去 run があれば、Glob で簡単に確認し、同一素材を除外する
-- 過去 run がなければスキップする
+### Step 4: 過去ネタとの重複チェック（必須）
 
-## 出力フォーマット（厳守）
+#### 4a. ストック knowledge の確認
+- ラジってえーじぇんと！本流番組の場合: knowledge `rajitte-topic-stock` を必ず Read する（`facets/knowledge/rajitte-topic-stock.md`）
+- 候補素材の slug / 主要キーワードを照合
+- 重複判定ルール（rajitte-topic-stock.md の「重複回避ルール」表に従う）:
+  - 同じ slug → 除外
+  - 主要キーワード3つ以上一致 → 「続報」として位置付け可能か検討、不可なら除外
+  - 過去回のその後・更新情報 → OK（連続性◎）
+  - 完全新規 → OK
 
-## Topic Analysis
-- topic: {元Topic}
-- assumed_genre: {推定番組ジャンル}
-- target_audience: {想定リスナー像}
+#### 4b. 過去 run の参照（補助）
+- `~/.mosaic-orch/runs/*-radio-writer/` に過去 run があれば Glob で簡単に確認
+- ストック knowledge と矛盾がないか相互参照
 
-## Search Queries
-- query_1: {キーワード}
-- query_2: ...
+#### 4c. 重複した場合の処理
+- 候補ストック (rajitte-topic-stock.md の「候補ストック」セクション) から代替素材を採用する
+- 候補も使い切っている場合は WebSearch をやり直して新素材を選定する
 
-## Selected Material
-### Material 1
-- name: {素材名}
-- summary: {1〜2行}
-- radio_angle: {ラジオでの料理ポイント}
-- source_url: {URL}
+## 出力フォーマット（厳守 — research-result contract に準拠）
 
-### Material 2
-...
+## Keywords
+- {キーワード1}: {1行説明、なぜ取り上げるか}
+- {キーワード2}: {...}
+- {キーワード3}: {...}
+（最低3件、検索で抽出した重要トピックを箇条書き）
 
-## Notes
-- excluded_due_to_duplication: {過去runとの重複で除外した素材があれば}
-- additional_research_needed: {追加調査が必要な点があれば}
+## References
+- {素材名1} ({URL}): {ラジオでの料理ポイント1行}
+- {素材名2} ({URL}): {...}
+- {素材名3} ({URL}): {...}
+（最低2件、5〜8件推奨。WebSearchで取得した素材）
+
+## Summary
+{以下を含む 200 文字以上のテキスト}
+- 想定番組ジャンル / 想定リスナー像
+- 検索クエリ（3〜6個）
+- 素材選定の方針と各素材の活用イメージ
+- 過去runとの重複チェック結果（あれば）
+- 追加調査が必要な点（あれば）
