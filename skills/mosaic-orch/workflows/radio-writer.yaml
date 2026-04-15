@@ -1,0 +1,185 @@
+name: radio-writer
+version: "1"
+description: ナレッジ・出来事をラジオ台本に変換する。WebSearchでニュース収集→初稿→6名並列レビュー→修正ループでA+以上を獲得するまで磨く。
+
+inputs:
+  - name: topic
+    type: string
+    required: true
+
+defaults:
+  permission: acceptEdits
+
+loop_monitors:
+  - cycle: [polish, review]
+    threshold: 3
+    judge:
+      persona: radio-program-director
+      instruction: |
+        polish → review のサイクルが {cycle_count} 回繰り返されました。
+        台本品質が向上しているなら「PRODUCTIVE」、同じ指摘が繰り返されているなら「UNPRODUCTIVE」と回答してください。
+        UNPRODUCTIVEの場合は最終決裁者として現状の台本で確定する判断をしてください。
+      decisions:
+        - contains: "PRODUCTIVE"
+          goto: review
+        - contains: "UNPRODUCTIVE"
+          goto: save
+
+stages:
+  # Stage 1: ニュース・素材収集（WebSearch）
+  - id: news-collect
+    kind: task
+    facets:
+      persona: radio-planner
+      knowledge: [broadcast-format]
+      instructions: [collect-news]
+    input: ${workflow.inputs.topic}
+    output_contract: research-result
+
+  # Stage 2: コーナー構成企画
+  - id: plan
+    kind: task
+    facets:
+      persona: radio-planner
+      knowledge: [broadcast-format]
+      instructions: [plan-corners]
+    input: |
+      Topic: ${workflow.inputs.topic}
+      Research: ${news-collect.output}
+    output_contract: corner-plan
+
+  # Stage 3: コーナー並列執筆
+  - id: draft
+    kind: fan_out
+    from: ${plan.output.corners}
+    as: corner
+    max_parallel: 5
+    facets:
+      persona: radio-writer
+      policies: [tone-casual]
+      instructions: [draft-corner]
+    input: ${corner}
+    output_contract: corner-draft
+
+  # Stage 4: 統合
+  - id: assemble
+    kind: fan_in
+    from: ${draft.outputs}
+    facets:
+      persona: editor
+      instructions: [assemble-script]
+    output_contract: full-script
+
+  # Stage 5: レビュアー設定（固定6名のメタデータ生成）
+  - id: reviewer-config
+    kind: task
+    facets:
+      persona: radio-program-director
+      instructions: [emit-radio-reviewer-list]
+    input: ${assemble.output}
+    output_contract: reviewer-list
+
+  # Stage 6: 6名並列レビュー（初回 — assemble の台本対象）
+  - id: review-init
+    kind: fan_out
+    from: ${reviewer-config.output.reviewers}
+    as: reviewer
+    max_parallel: 6
+    facets:
+      persona: ${reviewer.persona}
+      rubrics: [${reviewer.rubric}]
+      instructions: [review-as-radio-persona]
+    input: |
+      レビュアー名: ${reviewer.character_name}
+      評価軸: ${reviewer.rubric}
+      Script: ${assemble.output.full_script}
+    output_contract: reviewer-grade
+
+  # Stage 7: 初回レビュー集約
+  - id: aggregate-init
+    kind: fan_in
+    from: ${review-init.outputs}
+    facets:
+      persona: editor
+      instructions: [aggregate-radio-reviews]
+    input: |
+      Current Script: ${assemble.output.full_script}
+      Reviews: ${review-init.outputs}
+    output_contract: aggregated-review
+    next:
+      - when: ${aggregate-init.output.should_polish} == 'false'
+        goto: save-init
+      - when: ${aggregate-init.output.should_polish} == 'true'
+        goto: polish
+
+  # Stage 8: 修正（findings に基づく書き換え）
+  - id: polish
+    kind: task
+    facets:
+      persona: editor
+      policies: [tone-casual]
+      instructions: [polish-radio-script]
+    input: |
+      Current Script: ${aggregate-init.output.final_script}
+      Findings: ${aggregate-init.output.findings}
+    output_contract: full-script
+
+  # Stage 9: 6名並列レビュー（ループ — polish の台本対象）
+  - id: review
+    kind: fan_out
+    from: ${reviewer-config.output.reviewers}
+    as: reviewer
+    max_parallel: 6
+    facets:
+      persona: ${reviewer.persona}
+      rubrics: [${reviewer.rubric}]
+      instructions: [review-as-radio-persona]
+    input: |
+      レビュアー名: ${reviewer.character_name}
+      評価軸: ${reviewer.rubric}
+      Script: ${polish.output.full_script}
+    output_contract: reviewer-grade
+
+  # Stage 10: ループ後レビュー集約
+  - id: aggregate
+    kind: fan_in
+    from: ${review.outputs}
+    facets:
+      persona: editor
+      instructions: [aggregate-radio-reviews]
+    input: |
+      Current Script: ${polish.output.full_script}
+      Reviews: ${review.outputs}
+    output_contract: aggregated-review
+    next:
+      - when: ${aggregate.output.should_polish} == 'false'
+        goto: save
+      - when: ${aggregate.output.should_polish} == 'true'
+        goto: polish
+
+  # Stage 11a: 最終台本保存（初回で全員 A+ 以上だった場合の経路）
+  - id: save-init
+    kind: task
+    facets:
+      persona: editor
+      instructions: [save-radio-script]
+    input: |
+      Topic: ${workflow.inputs.topic}
+      Final Script: ${aggregate-init.output.final_script}
+      Final Grade: ${aggregate-init.output.min_grade}
+    output_contract: save-result
+    next:
+      - when: true
+        goto: COMPLETE
+
+  # Stage 11b: 最終台本保存（polish経由）
+  - id: save
+    kind: task
+    facets:
+      persona: editor
+      instructions: [save-radio-script]
+    input: |
+      Topic: ${workflow.inputs.topic}
+      Final Script: ${aggregate.output.final_script}
+      Final Grade: ${aggregate.output.min_grade}
+    output_contract: save-result
