@@ -1,6 +1,6 @@
-name: dev-orchestration
+name: dev-standard
 version: "1"
-description: 開発タスクを設計・計画・チーム分解・並列実装・5軸レビューで品質担保して納品する
+description: 中規模タスク（FE+BE複合、3〜5サブタスク）向け15ステージ標準パイプライン。design→plan→Wave1/2並列実装(max_parallel=8)→ai-review/fix→quality→5軸review→save→PR。design-review/plan-review/arbitrate/UI verifyを省略。30〜45分目標。
 
 inputs:
   - name: task
@@ -11,40 +11,14 @@ defaults:
   permission: acceptEdits
 
 loop_monitors:
-  - cycle: [design, design-review]
-    threshold: 2
-    judge:
-      persona: architect
-      instruction: |
-        design → design-review のサイクルが {cycle_count} 回繰り返されました。
-        設計が収束しているか判断してください。
-        品質が着実に向上しているなら「PRODUCTIVE」、同じ指摘が繰り返されているなら「UNPRODUCTIVE」と回答してください。
-      decisions:
-        - contains: "PRODUCTIVE"
-          goto: design
-        - contains: "UNPRODUCTIVE"
-          goto: plan
-  - cycle: [plan, plan-review]
-    threshold: 2
-    judge:
-      persona: architect
-      instruction: |
-        plan → plan-review のサイクルが {cycle_count} 回繰り返されました。
-        計画が収束しているか判断してください。
-        品質が着実に向上しているなら「PRODUCTIVE」、同じ指摘が繰り返されているなら「UNPRODUCTIVE」と回答してください。
-      decisions:
-        - contains: "PRODUCTIVE"
-          goto: plan
-        - contains: "UNPRODUCTIVE"
-          goto: check-dup
   - cycle: [ai-review, ai-fix]
     threshold: 3
     judge:
       persona: architect
       instruction: |
         ai-review → ai-fix のサイクルが {cycle_count} 回繰り返されました。
-        各サイクルのレポートを確認し、このループが健全（進捗あり）か非生産的（同じ問題を繰り返している）かを判断してください。
-        品質が着実に向上しているなら「PRODUCTIVE」、同じ指摘が繰り返されているなら「UNPRODUCTIVE」と回答してください。
+        各サイクルのレポートを確認し、品質が向上していれば「PRODUCTIVE」、
+        同じ指摘が繰り返されているなら「UNPRODUCTIVE」と回答してください。
       decisions:
         - contains: "PRODUCTIVE"
           goto: ai-review
@@ -56,8 +30,8 @@ loop_monitors:
       persona: architect
       instruction: |
         review → fix のサイクルが {cycle_count} 回繰り返されました。
-        直近のレビュー指摘と修正内容を確認し、このループが生産的かどうか判断してください。
-        品質が着実に向上しているなら「PRODUCTIVE」、同じ指摘が繰り返されているなら「UNPRODUCTIVE」と回答してください。
+        直近のレビュー指摘と修正内容を確認し、品質が向上していれば「PRODUCTIVE」、
+        同じ指摘が繰り返されているなら「UNPRODUCTIVE」と回答してください。
       decisions:
         - contains: "PRODUCTIVE"
           goto: review
@@ -65,7 +39,7 @@ loop_monitors:
           goto: save-results
 
 stages:
-  # Stage 1: 設計仕様 — コードベース診断 + ファイルレベル設計 + スコープ規律 + 受入基準
+  # Stage 1: 設計仕様（design-reviewなし）
   - id: design
     kind: task
     gate: approval
@@ -77,24 +51,7 @@ stages:
     output_contract: design-result
     permission: default
 
-  # Stage 2: AI設計レビュー — 5軸検証（完全性/ファイル設計/スコープ/実現可能性/依存整合性）
-  - id: design-review
-    kind: task
-    facets:
-      persona: architect
-      instructions: [review-design]
-    input: |
-      Task: ${workflow.inputs.task}
-      Design: ${design.output}
-    output_contract: design-review-result
-    permission: default
-    next:
-      - when: ${design-review.output.verdict} == 'APPROVE'
-        goto: plan
-      - when: ${design-review.output.verdict} == 'NEEDS_REVISION'
-        goto: design
-
-  # Stage 3: タスク計画 — サブタスク分解 + ファイル割り当て + テスト戦略 + 受入基準分配
+  # Stage 2: タスク計画（plan-reviewなし）
   - id: plan
     kind: task
     gate: approval
@@ -108,34 +65,7 @@ stages:
     output_contract: plan-result
     permission: default
 
-  # Stage 4: 計画検証 — 要件カバレッジ + ファイル衝突 + スコープクリープ + Wave依存整合
-  - id: plan-review
-    kind: task
-    facets:
-      persona: project-manager
-      instructions: [review-plan]
-    input: |
-      Task: ${workflow.inputs.task}
-      Design: ${design.output}
-      Plan: ${plan.output}
-    output_contract: plan-review-result
-    permission: default
-    next:
-      - when: ${plan-review.output.verdict} == 'APPROVE'
-        goto: check-dup
-      - when: ${plan-review.output.verdict} == 'NEEDS_REVISION'
-        goto: plan
-
-  # Stage 5: 重複チェック
-  - id: check-dup
-    kind: task
-    facets:
-      persona: project-manager
-      instructions: [check-duplicates]
-    input: ${workflow.inputs.task}
-    output_contract: duplicate-check
-
-  # Stage 6: Issue + ブランチ作成
+  # Stage 3: Issue + ブランチ作成
   - id: setup-git
     kind: task
     facets:
@@ -147,7 +77,7 @@ stages:
       Design: ${design.output}
     output_contract: git-setup
 
-  # Stage 7: Worktree 作成 — 実装用の隔離環境を準備
+  # Stage 4: Worktree 作成
   - id: setup-worktree
     kind: task
     facets:
@@ -158,7 +88,7 @@ stages:
       Design: ${design.output}
     output_contract: worktree-setup
 
-  # Stage 8: Wave1 並列実装
+  # Stage 5: Wave1 並列実装
   - id: implement-wave1
     kind: fan_out
     from: ${plan.output.wave1_subtasks}
@@ -183,7 +113,7 @@ stages:
       Implementation Guidelines: ${design.output.implementation_guidelines}
     output_contract: implementation-result
 
-  # Stage 9: Wave1 統合
+  # Stage 6: Wave1 統合
   - id: integrate-wave1
     kind: fan_in
     from: ${implement-wave1.outputs}
@@ -193,7 +123,7 @@ stages:
       instructions: [merge-implementations]
     output_contract: integration-result
 
-  # Stage 10: Wave2 並列実装（条件付き）
+  # Stage 7: Wave2 並列実装（条件付き）
   - id: implement-wave2
     kind: fan_out
     when: ${plan.output.has_wave2} == 'true'
@@ -220,7 +150,7 @@ stages:
       Implementation Guidelines: ${design.output.implementation_guidelines}
     output_contract: implementation-result
 
-  # Stage 11: Wave2 統合（条件付き）
+  # Stage 8: Wave2 統合（条件付き）
   - id: integrate-wave2
     kind: fan_in
     when: ${plan.output.has_wave2} == 'true'
@@ -231,7 +161,7 @@ stages:
       instructions: [merge-implementations]
     output_contract: integration-result
 
-  # Stage 12: AIアンチパターンレビュー — 実装済みコードのAI特有問題検出
+  # Stage 9: AIアンチパターンレビュー（arbitrate省略 — ai-fix の判断を信頼）
   - id: ai-review
     kind: task
     facets:
@@ -250,7 +180,7 @@ stages:
       - when: ${ai-review.output.verdict} == 'REJECT'
         goto: ai-fix
 
-  # Stage 13: AIアンチパターン修正 — 指摘に対する修正 or 修正不要判断
+  # Stage 10: AI指摘修正
   - id: ai-fix
     kind: task
     facets:
@@ -263,30 +193,13 @@ stages:
     output_contract: ai-fix-result
     next:
       - when: ${ai-fix.output.action} == 'no_fix_needed'
-        goto: arbitrate
+        goto: quality-gate
       - when: ${ai-fix.output.action} == 'fixed'
         goto: ai-review
       - when: ${ai-fix.output.action} == 'partial'
         goto: ai-review
 
-  # Stage 14: 仲裁 — ai-review と ai-fix の意見対立を独立検証で裁定
-  - id: arbitrate
-    kind: task
-    facets:
-      persona: architect
-      instructions: [arbitrate]
-    input: |
-      AI Review: ${ai-review.output}
-      AI Fix: ${ai-fix.output}
-    output_contract: arbitrate-result
-    permission: default
-    next:
-      - when: ${arbitrate.output.verdict} == 'APPROVE_FIXER'
-        goto: quality-gate
-      - when: ${arbitrate.output.verdict} == 'ESCALATE_TO_FIX'
-        goto: ai-fix
-
-  # Stage 15: 品質ゲート
+  # Stage 11: 品質ゲート
   - id: quality-gate
     kind: task
     facets:
@@ -299,7 +212,7 @@ stages:
       Implementation: ${integrate-wave1.output}
     output_contract: quality-result
 
-  # Stage 16: 5軸コードレビュー
+  # Stage 12: 5軸コードレビュー（standardでも残す — 中規模では必要）
   - id: review
     kind: task
     facets:
@@ -314,9 +227,9 @@ stages:
     permission: default
     next:
       - when: ${review.output.grade} >= 'A+'
-        goto: ui-verify
+        goto: save-results
 
-  # Stage 17: レビュー指摘の修正
+  # Stage 13: レビュー指摘の修正
   - id: fix
     kind: task
     facets:
@@ -329,24 +242,11 @@ stages:
     output_contract: fix-verdict
     next:
       - when: ${fix.output.grade} >= 'A+'
-        goto: ui-verify
+        goto: save-results
       - when: ${fix.output.grade} < 'A+'
         goto: review
 
-  # Stage 18: UI視覚検証（FE変更時のみ）
-  - id: ui-verify
-    kind: task
-    when: ${plan.output.has_fe} == 'true'
-    facets:
-      persona: qa-engineer
-      instructions: [verify-ui-visual]
-    skills: [usability-psychologist, web-design-guidelines, accessibility]
-    input: |
-      Design: ${design.output}
-      検証対象: デスクトップ(light/dark) + モバイル(light/dark) の4パターン
-    output_contract: ui-verification
-
-  # Stage 19: レビュー結果保存 + ログ
+  # Stage 14: レビュー結果保存 + ログ
   - id: save-results
     kind: task
     facets:
@@ -360,7 +260,7 @@ stages:
       Review: ${review.output}
     output_contract: save-result
 
-  # Stage 20: push + PR作成 + 結果報告（ユーザー承認必須）
+  # Stage 15: push + PR作成
   - id: finalize
     kind: task
     gate: approval

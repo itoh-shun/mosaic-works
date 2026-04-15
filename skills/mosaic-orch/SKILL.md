@@ -38,6 +38,16 @@ $ARGUMENTS を以下のように解析する:
 - `/mosaic-orch --facet-usage` → 全facetの使用状況を逆引き表示
 - `/mosaic-orch --facet-usage personas/reviewer` → reviewer persona を使うworkflowを表示
 
+### 開発系workflowの選び方（速度 vs 堅牢性）
+
+| Workflow | ステージ数 | 想定所要 | 想定タスク規模 |
+|---|---|---|---|
+| `dev-light` | 8 | 〜20分 | 単一機能・bugfix・小規模リファクタ。Wave分けなし、design-review/plan-review/arbitrate/5軸review/UI verifyを省略 |
+| `dev-standard` | 15 | 30〜45分 | FE+BE複合、3〜5サブタスク。design-review/plan-review/arbitrate/UI verifyを省略、5軸reviewは残す。max_parallel=8 |
+| `dev-orchestration` | 20 | 60〜90分 | 大規模・多領域・厳格品質要求。全レビュー層・arbitrate・UI verify・design/plan review loopあり |
+
+タスクの規模・品質要求に応じて使い分ける。迷ったら `dev-standard` から始める。
+
 ### ユーティリティコマンド
 
 第1トークンが以下のユーティリティフラグの場合、Orchestrator を呼ばずに直接処理する:

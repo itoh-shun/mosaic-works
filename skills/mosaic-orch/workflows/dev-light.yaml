@@ -1,0 +1,152 @@
+name: dev-light
+version: "1"
+description: 軽量タスク（単一機能・bugfix・小規模リファクタ）向け7ステージ高速パイプライン。design→plan→implement(単一)→ai-review/fix→quality→save→PR。20分以内目標。
+
+inputs:
+  - name: task
+    type: string
+    required: true
+
+defaults:
+  permission: acceptEdits
+
+loop_monitors:
+  - cycle: [ai-review, ai-fix]
+    threshold: 2
+    judge:
+      persona: architect
+      instruction: |
+        ai-review → ai-fix のサイクルが {cycle_count} 回繰り返されました。
+        各サイクルのレポートを確認し、品質が向上していれば「PRODUCTIVE」、
+        同じ指摘が繰り返されているなら「UNPRODUCTIVE」と回答してください。
+      decisions:
+        - contains: "PRODUCTIVE"
+          goto: ai-review
+        - contains: "UNPRODUCTIVE"
+          goto: quality-gate
+
+stages:
+  # Stage 1: 設計仕様（軽量・design-reviewなし）
+  - id: design
+    kind: task
+    gate: approval
+    facets:
+      persona: architect
+      knowledge: [team-roster, skill-catalog, mcp-catalog]
+      instructions: [design-spec]
+    input: ${workflow.inputs.task}
+    output_contract: design-result
+    permission: default
+
+  # Stage 2: タスク計画（plan-reviewなし、fan_outなし＝has_wave2: false 前提）
+  - id: plan
+    kind: task
+    gate: approval
+    facets:
+      persona: architect
+      knowledge: [team-roster, skill-catalog, mcp-catalog]
+      instructions: [plan-tasks]
+    input: |
+      Task: ${workflow.inputs.task}
+      Design: ${design.output}
+    output_contract: plan-result
+    permission: default
+
+  # Stage 3: Issue + ブランチ作成（worktree省略 — 軽量タスクは現在の作業ディレクトリで直接実装）
+  - id: setup-git
+    kind: task
+    facets:
+      persona: project-manager
+      policies: [git-conventions]
+      instructions: [setup-git-branch]
+    input: |
+      Task: ${workflow.inputs.task}
+      Design: ${design.output}
+    output_contract: git-setup
+
+  # Stage 4: 単一実装（fan_outなし、Wave分けなし。Subtask[0] のみ実行）
+  - id: implement
+    kind: task
+    facets:
+      persona: ${plan.output.wave1_subtasks[0].persona}
+      policies: [coding-standards, no-push, tdd]
+      knowledge: [error-patterns]
+      instructions: [${plan.output.wave1_subtasks[0].instruction}]
+    skills: ${plan.output.wave1_subtasks[0].skills}
+    mcps: ${plan.output.wave1_subtasks[0].mcps}
+    input: |
+      Task: ${plan.output.wave1_subtasks[0].description}
+      Branch: ${setup-git.output.branch_name}
+      Codebase Context: ${design.output.codebase_context}
+      Files to Create: ${plan.output.wave1_subtasks[0].files_create}
+      Files to Modify: ${plan.output.wave1_subtasks[0].files_modify}
+      Testing Strategy: ${plan.output.wave1_subtasks[0].testing_strategy}
+      Acceptance Criteria: ${plan.output.wave1_subtasks[0].acceptance_criteria}
+      Implementation Guidelines: ${design.output.implementation_guidelines}
+    output_contract: implementation-result
+
+  # Stage 5: AIアンチパターンレビュー（軽量でも必須 — AI生成コードの最低保証）
+  - id: ai-review
+    kind: task
+    facets:
+      persona: ai-antipattern-reviewer
+      policies: [ai-antipattern]
+      instructions: [ai-review]
+    input: |
+      Design: ${design.output}
+      Plan: ${plan.output}
+      Implementation: ${implement.output}
+    output_contract: ai-review-result
+    permission: default
+    next:
+      - when: ${ai-review.output.verdict} == 'APPROVE'
+        goto: quality-gate
+      - when: ${ai-review.output.verdict} == 'REJECT'
+        goto: ai-fix
+
+  # Stage 6: AI指摘修正（arbitrate省略 — 軽量モードでは ai-fix の判断を信頼）
+  - id: ai-fix
+    kind: task
+    facets:
+      persona: ${plan.output.wave1_subtasks[0].persona}
+      policies: [coding-standards, no-push]
+      instructions: [ai-fix]
+    input: |
+      AI Review Result: ${ai-review.output}
+      Design: ${design.output}
+    output_contract: ai-fix-result
+    next:
+      - when: ${ai-fix.output.action} == 'no_fix_needed'
+        goto: quality-gate
+      - when: ${ai-fix.output.action} == 'fixed'
+        goto: ai-review
+      - when: ${ai-fix.output.action} == 'partial'
+        goto: ai-review
+
+  # Stage 7: 品質ゲート（5軸review省略、quality-gateのみ）
+  - id: quality-gate
+    kind: task
+    facets:
+      persona: qa-engineer
+      policies: [tdd]
+      instructions: [run-quality-checks]
+    input: |
+      Design: ${design.output}
+      Plan: ${plan.output}
+      Implementation: ${implement.output}
+    output_contract: quality-result
+
+  # Stage 8: push + PR作成（save-results統合、ユーザー承認必須）
+  - id: finalize
+    kind: task
+    gate: approval
+    facets:
+      persona: project-manager
+      policies: [git-conventions]
+      instructions: [push-pr-report]
+    input: |
+      Task: ${workflow.inputs.task}
+      Design: ${design.output}
+      Git Setup: ${setup-git.output}
+      Quality: ${quality-gate.output}
+    output_contract: completion-report
