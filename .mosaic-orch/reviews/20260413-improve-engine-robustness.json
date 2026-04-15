@@ -1,0 +1,25 @@
+{
+  "date": "2026-04-13",
+  "task": "mosaic-worksのイケてないところをなおす",
+  "workflow": "dev-orchestration",
+  "execution_mode": "wave",
+  "members": [
+    {"persona": "architect", "stage": "analyze", "wave": 0},
+    {"persona": "architect", "stage": "implement-wave1", "subtask": "V12 guard rule", "wave": 1},
+    {"persona": "content-creator", "stage": "implement-wave1", "subtask": "facet-usage walkthrough", "wave": 1},
+    {"persona": "architect", "stage": "implement-wave1", "subtask": "contract flow docs", "wave": 1},
+    {"persona": "tester", "stage": "implement-wave2", "subtask": "dry-run smoke test", "wave": 2}
+  ],
+  "review": {
+    "naming": "A+",
+    "testing": "A",
+    "design": "A+",
+    "average": "A"
+  },
+  "issues_found": [
+    "dry-run-smoke-test.md: チェックリストのテスト4番号重複",
+    "dry-run-smoke-test.md: V12条件の記述が不正確",
+    "facet-usage-walkthrough.md: ディレクトリ誤記"
+  ],
+  "fixes_applied": true
+}

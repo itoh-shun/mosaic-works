@@ -1,0 +1,178 @@
+name: dev-orchestration
+version: "1"
+description: 開発タスクをチーム分解・並列実装・5軸レビューで品質担保して納品する
+
+inputs:
+  - name: task
+    type: string
+    required: true
+
+defaults:
+  permission: acceptEdits
+
+stages:
+  # Stage 1: タスク分析 + サブタスク分解 + persona/instruction選定
+  - id: analyze
+    kind: task
+    facets:
+      persona: architect
+      knowledge: [team-roster, skill-catalog]
+      instructions: [analyze-dev-task]
+    input: ${workflow.inputs.task}
+    output_contract: task-analysis
+    permission: default  # 読み取り専用 — 分析のみ、ファイル変更不可
+
+  # Stage 2: 重複チェック
+  - id: check-dup
+    kind: task
+    facets:
+      persona: project-manager
+      instructions: [check-duplicates]
+    input: ${workflow.inputs.task}
+    output_contract: duplicate-check
+
+  # Stage 3: Issue + ブランチ作成
+  - id: setup-git
+    kind: task
+    facets:
+      persona: project-manager
+      policies: [git-conventions]
+      instructions: [setup-git-branch]
+    input: |
+      Task: ${workflow.inputs.task}
+      Analysis: ${analyze.output}
+    output_contract: git-setup
+
+  # Stage 4: Wave1 並列実装
+  - id: implement-wave1
+    kind: fan_out
+    from: ${analyze.output.wave1_subtasks}
+    as: subtask
+    facets:
+      persona: ${subtask.persona}
+      policies: [coding-standards, no-push, tdd]
+      knowledge: [error-patterns]
+      instructions: [${subtask.instruction}]
+    input: |
+      Task: ${subtask.description}
+      Skills: ${subtask.skills}
+      Branch: ${setup-git.output.branch_name}
+    output_contract: implementation-result
+
+  # Stage 5: Wave1 統合
+  - id: integrate-wave1
+    kind: fan_in
+    from: ${implement-wave1.outputs}
+    facets:
+      persona: integrator
+      policies: [coding-standards]
+      instructions: [merge-implementations]
+    output_contract: integration-result
+
+  # Stage 6: Wave2 並列実装（条件付き）
+  - id: implement-wave2
+    kind: fan_out
+    when: ${analyze.output.has_wave2} == 'true'
+    from: ${analyze.output.wave2_subtasks}
+    as: subtask
+    facets:
+      persona: ${subtask.persona}
+      policies: [coding-standards, no-push, tdd]
+      knowledge: [error-patterns]
+      instructions: [${subtask.instruction}]
+    input: |
+      Task: ${subtask.description}
+      Skills: ${subtask.skills}
+      Branch: ${setup-git.output.branch_name}
+      Wave1 Result: ${integrate-wave1.output}
+    output_contract: implementation-result
+
+  # Stage 7: Wave2 統合（条件付き）
+  - id: integrate-wave2
+    kind: fan_in
+    when: ${analyze.output.has_wave2} == 'true'
+    from: ${implement-wave2.outputs}
+    facets:
+      persona: integrator
+      policies: [coding-standards]
+      instructions: [merge-implementations]
+    output_contract: integration-result
+
+  # Stage 8: 品質ゲート
+  - id: quality-gate
+    kind: task
+    facets:
+      persona: qa-engineer
+      policies: [tdd]
+      instructions: [run-quality-checks]
+    input: |
+      Analysis: ${analyze.output}
+      Implementation: ${integrate-wave1.output}
+    output_contract: quality-result
+
+  # Stage 9: 5軸コードレビュー
+  - id: review
+    kind: task
+    facets:
+      persona: code-reviewer
+      rubrics: [performance, naming, testing, security, design]
+      instructions: [code-review-5axis]
+    input: |
+      Analysis: ${analyze.output}
+      Quality Gate: ${quality-gate.output}
+    output_contract: dev-review-verdict
+    permission: default
+
+  # Stage 10: レビュー修正ループ（A+未満の場合）
+  - id: fix
+    kind: task
+    when: ${review.output.grade} < 'A+'
+    facets:
+      persona: ${analyze.output.wave1_subtasks[0].persona}
+      policies: [coding-standards, no-push]
+      rubrics: [performance, naming, testing, security, design]
+      instructions: [apply-fixes-and-self-assess]
+    input: |
+      Review Result: ${review.output}
+    loop_until: ${self.grade} >= 'A+'
+    max_iterations: 3
+    output_contract: fix-verdict
+
+  # Stage 11: UI視覚検証（FE変更時のみ）
+  - id: ui-verify
+    kind: task
+    when: ${analyze.output.has_fe} == 'true'
+    facets:
+      persona: qa-engineer
+      instructions: [verify-ui-visual]
+    input: |
+      Analysis: ${analyze.output}
+    output_contract: ui-verification
+
+  # Stage 12: レビュー結果保存 + ログ
+  - id: save-results
+    kind: task
+    facets:
+      persona: project-manager
+      knowledge: [error-patterns]
+      instructions: [save-review-and-log]
+    input: |
+      Task: ${workflow.inputs.task}
+      Analysis: ${analyze.output}
+      Review: ${review.output}
+    output_contract: save-result
+
+  # Stage 13: push + PR作成 + 結果報告
+  - id: finalize
+    kind: task
+    facets:
+      persona: project-manager
+      policies: [git-conventions]
+      instructions: [push-pr-report]
+    input: |
+      Task: ${workflow.inputs.task}
+      Analysis: ${analyze.output}
+      Git Setup: ${setup-git.output}
+      Review Grade: ${review.output.grade}
+      Quality: ${quality-gate.output}
+    output_contract: completion-report

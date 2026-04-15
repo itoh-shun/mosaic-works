@@ -206,3 +206,4 @@ Orchestrator INIT 時に全て実行する。1つでも失敗したら SchemaErr
 | V15 | loop_monitors の judge.decisions[].goto が stages の ID、`"COMPLETE"`、または `"ABORT"` のいずれかである | SchemaError |
 | V16 | next[].goto が stages の ID、`"COMPLETE"`、または `"ABORT"` のいずれかである | SchemaError |
 | V17 | fan_out の `as` 変数名が stage ID、`workflow`、`self` と衝突しない | SchemaError |
+| V18 | fan_out の from 配列要素数が 6 以上で max_parallel が未設定 | WARN（推奨値: 5） |
