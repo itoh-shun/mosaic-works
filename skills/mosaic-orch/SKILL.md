@@ -48,6 +48,52 @@ $ARGUMENTS を以下のように解析する:
 
 タスクの規模・品質要求に応じて使い分ける。迷ったら `dev-standard` から始める。
 
+### 自動マッピング（workflow省略時）
+
+第1トークンが**既存workflow名でも `/` を含むパスでも `--` フラグでもない**場合、入力テキスト全体を「開発タスク」として扱い、軽量分析で **dev-light / dev-standard / dev-orchestration** のいずれかを自動選択する。
+
+例:
+- `/mosaic-orch ログイン画面の余白を直す` → 自動判定 → `dev-light`
+- `/mosaic-orch ユーザー一覧画面に検索とソートを追加` → 自動判定 → `dev-standard`
+- `/mosaic-orch Instagram風SNSをフルスタックで新規構築` → 自動判定 → `dev-orchestration`
+
+#### 自動判定ルール（SKILL.md 内で評価する）
+
+入力テキストに対して以下を順に評価し、最初にマッチした結果を採用する:
+
+| 優先 | 判定条件 | 選定workflow |
+|---|---|---|
+| 1 | 以下のいずれかを含む: 「新規」「フルスタック」「ゼロから」「アーキテクチャ」「monorepo」「new project」「from scratch」「architecture」「fullstack」「greenfield」、または入力が **800文字以上** | `dev-orchestration` |
+| 2 | FE系キーワード（「FE」「フロントエンド」「画面」「UI」「コンポーネント」「ダッシュボード」「frontend」「screen」「component」「dashboard」「page」）の **いずれか** かつ BE系キーワード（「API」「BE」「バックエンド」「DB」「エンドポイント」「backend」「database」「endpoint」「route」「migration」）の **いずれか** を含む（FE+BE複合）、または **複数機能の連結**（「と」「および」「+」「,」「and」「plus」で機能を列挙）、または入力が **200文字以上** | `dev-standard` |
+| 3 | 上記いずれにも該当しない（短文・単一機能・bugfix系キーワード「直す」「修正」「リネーム」「typo」「改名」「fix」「rename」「tweak」「adjust」「polish」などを含む） | `dev-light` |
+
+#### 自動選択時のユーザー確認
+
+自動マッピングが発動した場合、Orchestrator に委譲する**前に** AskUserQuestion で確認する:
+
+```
+🤖 タスクを分析しました。
+
+入力: 「{先頭150文字}」
+判定: dev-standard
+理由: {マッチしたルールの説明、例: "FE+BE複合の表現を検出"}
+
+このまま実行しますか？
+1. 続行（dev-standard で実行）
+2. dev-light に変更（〜20分の軽量モード）
+3. dev-orchestration に変更（60〜90分の厳格モード）
+4. 中断
+```
+
+ユーザーが「2」「3」を選んだ場合は workflow を差し替えて続行する。「4」なら即終了。
+
+#### 自動マッピングを無効化したいとき
+
+明示的に workflow 名を指定すれば自動マッピングは発動しない:
+- `/mosaic-orch dev-light タスク内容` — light を強制
+- `/mosaic-orch dev-orchestration タスク内容` — heavy を強制
+- `/mosaic-orch radio-script ...` — 開発系以外も従来通り
+
 ### ユーティリティコマンド
 
 第1トークンが以下のユーティリティフラグの場合、Orchestrator を呼ばずに直接処理する:
@@ -219,7 +265,24 @@ Sun  ⬜⬜⬜🟦⬜⬜⬜⬜🟢🟢🟡⬜
 2. workflow名として検索:
    - `~/.mosaic-orch/workflows/{name}.yaml` （ユーザーカスタム、優先）
    - `~/.claude/skills/mosaic-orch/workflows/{name}.yaml` （Skill同梱ビルトイン）
-3. 見つからない場合: 上記2ディレクトリを Glob で列挙し、AskUserQuestion で選択させる
+3. 見つからない場合 → **自動マッピング判定**へ進む（下記）
+
+#### 自動マッピング判定（手順 1.5）
+
+第1トークンが workflow として解決できなかった場合、**`/mosaic-orch {タスク文}` 形式の省略呼び出し**として扱い、$ARGUMENTS 全体を `task` として以下を実行する:
+
+1. `task` テキストを上記「自動マッピング」セクションの判定ルールで評価し、`dev-light` / `dev-standard` / `dev-orchestration` のいずれかを選定する
+2. 判定理由（マッチしたルール）を記録する
+3. AskUserQuestion で確認画面（上記「自動選択時のユーザー確認」のテンプレート）を表示する
+4. ユーザー選択に応じて workflow を確定する:
+   - 「1. 続行」 → 自動判定の workflow を採用
+   - 「2. dev-light に変更」 → `dev-light` を採用
+   - 「3. dev-orchestration に変更」 → `dev-orchestration` を採用
+   - 「4. 中断」 → 即終了
+5. 確定した workflow を `~/.claude/skills/mosaic-orch/workflows/{name}.yaml` から Read して、手順 2 へ進む
+6. inputs バインド時、$ARGUMENTS 全体を `workflow.inputs.task` に渡す（第1トークンも含む）
+
+**注意**: 自動マッピングが発動するのは第1トークンが「workflow解決失敗」かつ「`--`フラグでない」かつ「ファイルパスでない」場合のみ。明示的に workflow 名を指定した場合（例: `dev-light`）は自動マッピングをスキップして通常通り実行する。
 
 ### 手順 2: Orchestrator に委譲
 
